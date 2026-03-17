@@ -49,6 +49,8 @@ function HerbMapInner() {
     locateUser,
     openEditModal,
     handleModalSuccess,
+    handleModalCancel,
+    handleModalError,
     handleDeleteConfirm,
   } = useHerbMapContext();
 
@@ -259,8 +261,8 @@ function HerbMapInner() {
         pendingPoint={state.pendingPoint}
         editingMarker={state.editingMarker}
         onSuccess={handleModalSuccess}
-        onCancel={() => dispatch({ type: "CLOSE_MODAL" })}
-        onError={(msg) => dispatch({ type: "SET_ERROR", payload: msg })}
+        onCancel={handleModalCancel}
+        onError={handleModalError}
       />
 
       <AlertDialog

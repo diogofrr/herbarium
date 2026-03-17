@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useEffect, useMemo } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { X } from "lucide-react";
 
@@ -11,7 +11,7 @@ import { HERB_CATALOG, HERB_KEYS } from "@/lib/herb-catalog";
 import { Dialog, DialogClose, DialogContent } from "@/components/ui/dialog";
 import { Select, SelectItem } from "@/components/ui/select";
 import { Combobox } from "@/components/ui/combobox";
-import type { HerbKey, HerbMarker } from "@/types/herb";
+import type { HerbDetails, HerbKey, HerbMarker } from "@/types/herb";
 
 type Props = {
   open: boolean;
@@ -21,6 +21,35 @@ type Props = {
   onCancel: () => void;
   onError: (msg: string) => void;
 };
+
+// Isolated preview — only re-renders when the selected herb changes.
+const HerbPreview = memo(function HerbPreview({ herb }: { herb: HerbDetails }) {
+  return (
+    <section className="herb-preview" aria-label="detalhes da erva selecionada">
+      <p className="herb-preview-title">Resumo da erva</p>
+      <div className="popup-tags">
+        <span>{herb.label}</span>
+        <span>{herb.energyTemperature}</span>
+        <span>Risco: {herb.allergyRisk}</span>
+      </div>
+      <div className="popup-tags">
+        {herb.saintTags.map((tag) => (
+          <span key={tag}>{tag}</span>
+        ))}
+      </div>
+      <div className="popup-tags popup-tags-props">
+        {herb.properties.map((prop) => (
+          <span key={prop}>{prop}</span>
+        ))}
+      </div>
+      {herb.warningNote ? (
+        <p className={`popup-warning popup-warning-${herb.allergyRisk}`}>
+          ⚠ {herb.warningNote}
+        </p>
+      ) : null}
+    </section>
+  );
+});
 
 export const HerbFormModal = memo(function HerbFormModal({
   open,
@@ -38,12 +67,26 @@ export const HerbFormModal = memo(function HerbFormModal({
     control,
     handleSubmit,
     reset,
-    watch,
     formState: { errors },
   } = useForm<HerbFormValues>({
     resolver: zodResolver(HerbFormSchema),
     defaultValues: { herbKey: "arruda", status: "muita", notes: "", address: "" },
   });
+
+  // useWatch subscribes only to herbKey changes — typing in other fields
+  // will NOT re-render this component or HerbPreview.
+  const herbKey = useWatch({ control, name: "herbKey" }) as HerbKey;
+  const selectedHerb = HERB_CATALOG[herbKey] ?? HERB_CATALOG["arruda"];
+
+  const herbOptions = useMemo(
+    () =>
+      HERB_KEYS.map((key) => ({
+        value: key,
+        label: HERB_CATALOG[key].label,
+        sublabel: HERB_CATALOG[key].saintTags.slice(0, 3).join(", "),
+      })),
+    [],
+  );
 
   // Sync form when modal opens or switches between create/edit mode.
   // react-hook-form's reset() must be called imperatively — this useEffect is necessary.
@@ -60,19 +103,6 @@ export const HerbFormModal = memo(function HerbFormModal({
         : { herbKey: "arruda", status: "muita", notes: "", address: "" },
     );
   }, [open, editingMarker, reset]);
-
-  const herbKey = watch("herbKey") as HerbKey;
-  const selectedHerb = HERB_CATALOG[herbKey];
-
-  const herbOptions = useMemo(
-    () =>
-      HERB_KEYS.map((key) => ({
-        value: key,
-        label: HERB_CATALOG[key].label,
-        sublabel: HERB_CATALOG[key].saintTags.slice(0, 3).join(", "),
-      })),
-    [],
-  );
 
   async function onValid(values: HerbFormValues) {
     if (!pendingPoint) return;
@@ -108,7 +138,9 @@ export const HerbFormModal = memo(function HerbFormModal({
         description="Formulário para registrar uma erva no mapa"
       >
         <div className="modal-header">
-          <h2 className="modal-title">{editingMarker ? "Editar localização" : "Adicionar localização"}</h2>
+          <h2 className="modal-title">
+            {editingMarker ? "Editar localização" : "Adicionar localização"}
+          </h2>
           <DialogClose asChild>
             <button
               type="button"
@@ -130,7 +162,10 @@ export const HerbFormModal = memo(function HerbFormModal({
 
         {errors.herbKey || errors.status || errors.notes || errors.address ? (
           <p className="form-error" role="alert">
-            {errors.herbKey?.message ?? errors.status?.message ?? errors.notes?.message ?? errors.address?.message}
+            {errors.herbKey?.message ??
+              errors.status?.message ??
+              errors.notes?.message ??
+              errors.address?.message}
           </p>
         ) : null}
 
@@ -152,29 +187,7 @@ export const HerbFormModal = memo(function HerbFormModal({
           />
         </label>
 
-        <section className="herb-preview" aria-label="detalhes da erva selecionada">
-          <p className="herb-preview-title">Resumo da erva</p>
-          <div className="popup-tags">
-            <span>{selectedHerb.label}</span>
-            <span>{selectedHerb.energyTemperature}</span>
-            <span>Risco: {selectedHerb.allergyRisk}</span>
-          </div>
-          <div className="popup-tags">
-            {selectedHerb.saintTags.map((tag) => (
-              <span key={tag}>{tag}</span>
-            ))}
-          </div>
-          <div className="popup-tags popup-tags-props">
-            {selectedHerb.properties.map((prop) => (
-              <span key={prop}>{prop}</span>
-            ))}
-          </div>
-          {selectedHerb.warningNote ? (
-            <p className={`popup-warning popup-warning-${selectedHerb.allergyRisk}`}>
-              ⚠ {selectedHerb.warningNote}
-            </p>
-          ) : null}
-        </section>
+        <HerbPreview herb={selectedHerb} />
 
         <label>
           Status

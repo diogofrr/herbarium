@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as Popover from "@radix-ui/react-popover";
-import { useVirtualizer } from "@tanstack/react-virtual";
 import { Check, ChevronDown, Search, X } from "lucide-react";
 
 export type ComboboxOption = {
@@ -20,9 +19,6 @@ type ComboboxProps = {
   searchPlaceholder?: string;
   disabled?: boolean;
 };
-
-const ITEM_HEIGHT = 38;
-const MAX_LIST_HEIGHT = 280;
 
 export function Combobox({
   options,
@@ -48,37 +44,10 @@ export function Combobox({
     return options.filter((o) => o.label.toLowerCase().includes(q) || o.sublabel?.toLowerCase().includes(q));
   }, [options, search]);
 
-  const virtualizer = useVirtualizer({
-    count: filtered.length,
-    getScrollElement: () => listRef.current,
-    estimateSize: () => ITEM_HEIGHT,
-    overscan: 8,
-  });
-
-  // Focus search input when popover opens
-  useEffect(() => {
-    if (open) {
-      const t = setTimeout(() => inputRef.current?.focus(), 30);
-      return () => clearTimeout(t);
-    } else {
-      setSearch("");
-    }
-  }, [open]);
-
-  // Scroll selected item into view on open
-  useEffect(() => {
-    if (!open || !value) return;
-    const idx = filtered.findIndex((o) => o.value === value);
-    if (idx > -1) virtualizer.scrollToIndex(idx, { align: "auto" });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
-
   function handleSelect(optValue: string) {
     onValueChange(optValue);
     setOpen(false);
   }
-
-  const listHeight = Math.min(filtered.length * ITEM_HEIGHT, MAX_LIST_HEIGHT);
 
   return (
     <Popover.Root open={open} onOpenChange={disabled ? undefined : setOpen}>
@@ -114,8 +83,6 @@ export function Combobox({
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
-                // Reset virtualizer scroll to top on new search
-                listRef.current?.scrollTo({ top: 0 });
               }}
               placeholder={searchPlaceholder}
               className="combobox-search-input"
@@ -137,51 +104,39 @@ export function Combobox({
             ) : null}
           </div>
 
-          {/* Virtualized list */}
+          {/* List */}
           {filtered.length > 0 ? (
             <div
               ref={listRef}
               className="combobox-list"
               role="listbox"
-              style={{ height: listHeight }}
             >
-              <div style={{ height: virtualizer.getTotalSize(), position: "relative" }}>
-                {virtualizer.getVirtualItems().map((vItem) => {
-                  const opt = filtered[vItem.index];
-                  const isSelected = opt.value === value;
-                  return (
-                    <div
-                      key={opt.value}
-                      role="option"
-                      aria-selected={isSelected}
-                      className={`combobox-item${isSelected ? " selected" : ""}`}
-                      style={{
-                        position: "absolute",
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        height: vItem.size,
-                        transform: `translateY(${vItem.start}px)`,
-                      }}
-                      onClick={() => handleSelect(opt.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") handleSelect(opt.value);
-                      }}
-                      tabIndex={0}
-                    >
-                      <span className="combobox-item-check">
-                        {isSelected ? <Check size={12} /> : null}
-                      </span>
-                      <span className="combobox-item-text">
-                        {opt.label}
-                        {opt.sublabel ? (
-                          <span className="combobox-item-sublabel">{opt.sublabel}</span>
-                        ) : null}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
+              {filtered.map((opt) => {
+                const isSelected = opt.value === value;
+                return (
+                  <div
+                    key={opt.value}
+                    role="option"
+                    aria-selected={isSelected}
+                    className={`combobox-item${isSelected ? " selected" : ""}`}
+                    onClick={() => handleSelect(opt.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") handleSelect(opt.value);
+                    }}
+                    tabIndex={0}
+                  >
+                    <span className="combobox-item-check">
+                      {isSelected ? <Check size={12} /> : null}
+                    </span>
+                    <span className="combobox-item-text">
+                      {opt.label}
+                      {opt.sublabel ? (
+                        <span className="combobox-item-sublabel">{opt.sublabel}</span>
+                      ) : null}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <p className="combobox-empty">Nenhum resultado para &ldquo;{search}&rdquo;</p>

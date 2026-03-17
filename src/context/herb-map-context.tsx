@@ -3,7 +3,7 @@
 import { createContext, useContext, useMemo, useCallback, type ReactNode } from "react";
 import { useMapState, useGeolocation } from "@/hooks";
 import { useDeleteHerb } from "@/hooks/use-herbs";
-import type { MapState, MapAction, FocusPoint } from "@/hooks/use-map-state";
+import type { MapState, MapAction } from "@/hooks/use-map-state";
 import type { HerbMarker } from "@/types/herb";
 import type { Dispatch } from "react";
 
@@ -16,6 +16,8 @@ type HerbMapContextValue = {
   locateUser: () => void;
   openEditModal: (marker: HerbMarker) => void;
   handleModalSuccess: () => void;
+  handleModalCancel: () => void;
+  handleModalError: (msg: string) => void;
   handleDeleteConfirm: () => void;
 };
 
@@ -43,7 +45,6 @@ export function HerbMapProvider({ children }: { children: ReactNode }) {
     (lat: number, lng: number) => {
       dispatch({ type: "CLEAR_ERROR" });
       dispatch({ type: "SET_PENDING_POINT", payload: { lat, lng } });
-      dispatch({ type: "CLOSE_MODAL" });
     },
     [dispatch],
   );
@@ -62,6 +63,17 @@ export function HerbMapProvider({ children }: { children: ReactNode }) {
   const handleModalSuccess = useCallback(() => {
     dispatch({ type: "MODAL_SUCCESS" });
   }, [dispatch]);
+
+  const handleModalCancel = useCallback(() => {
+    dispatch({ type: "CLOSE_MODAL" });
+  }, [dispatch]);
+
+  const handleModalError = useCallback(
+    (msg: string) => {
+      dispatch({ type: "SET_ERROR", payload: msg });
+    },
+    [dispatch],
+  );
 
   const handleDeleteConfirm = useCallback(() => {
     const marker = state.confirmDelete;
@@ -87,6 +99,8 @@ export function HerbMapProvider({ children }: { children: ReactNode }) {
       locateUser,
       openEditModal,
       handleModalSuccess,
+      handleModalCancel,
+      handleModalError,
       handleDeleteConfirm,
     }),
     [
@@ -98,6 +112,8 @@ export function HerbMapProvider({ children }: { children: ReactNode }) {
       locateUser,
       openEditModal,
       handleModalSuccess,
+      handleModalCancel,
+      handleModalError,
       handleDeleteConfirm,
     ],
   );
