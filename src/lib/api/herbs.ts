@@ -20,11 +20,13 @@ export async function fetchHerbs(
 ): Promise<HerbMarker[]> {
   const params = new URLSearchParams();
   if (filter.q?.trim()) params.set("q", filter.q.trim());
-  if (filter.status && filter.status !== "todos") params.set("status", filter.status);
+  if (filter.status && filter.status !== "todos")
+    params.set("status", filter.status);
 
   const res = await fetch(`/api/herbs?${params.toString()}`, { signal });
   const payload = (await res.json()) as { data?: HerbMarker[]; error?: string };
-  if (!res.ok) throw new Error(payload.error ?? "Não foi possível carregar os pontos.");
+  if (!res.ok)
+    throw new Error(payload.error ?? "Não foi possível carregar os pontos.");
   return payload.data ?? [];
 }
 
@@ -59,8 +61,14 @@ export async function updateHerb(
   return payload.data!;
 }
 
-export async function deleteHerb(id: string, signal?: AbortSignal): Promise<void> {
-  const res = await fetch(`/api/herbs/${id}`, { method: "DELETE", signal });
+export async function deleteHerb(
+  id: string,
+  signal?: AbortSignal,
+): Promise<void> {
+  const res = await fetch(`/api/herbs/${id}`, {
+    method: "DELETE",
+    signal,
+  });
   const payload = (await res.json()) as { success?: boolean; error?: string };
   if (!res.ok) throw new Error(payload.error ?? "Não foi possível remover.");
 }

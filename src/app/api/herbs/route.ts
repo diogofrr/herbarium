@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
 import {
@@ -5,47 +6,62 @@ import {
   HERB_KEYS,
   isHerbKey,
 } from "@/lib/herb-catalog";
-import { createHerb, listHerbs } from "@/lib/herb-store";
 import { isWithinUberlandia } from "@/lib/uberlandia";
 import type { HerbClassification, HerbStatus } from "@/types/herb";
 
-export const runtime = "nodejs";
+const API_URL = process.env.HERBARIUM_API_URL ?? "http://localhost:8080";
+const COOKIE_NAME = "herbarium_session";
 
 function parseStatus(value: string | null): HerbStatus | undefined {
-  if (value === "pouca" || value === "muita") {
-    return value;
-  }
-
+  if (value === "pouca" || value === "muita") return value;
   return undefined;
 }
 
 function parseClassification(value: string | null): HerbClassification | undefined {
-  if (!value) {
-    return undefined;
-  }
-
-  if (HERB_CLASSIFICATIONS.includes(value as HerbClassification)) {
+  if (value && HERB_CLASSIFICATIONS.includes(value as HerbClassification)) {
     return value as HerbClassification;
   }
-
   return undefined;
 }
 
+async function getSessionToken(): Promise<string | undefined> {
+  const cookieStore = await cookies();
+  return cookieStore.get(COOKIE_NAME)?.value;
+}
+
 export async function GET(request: NextRequest) {
-  const query = request.nextUrl.searchParams.get("q") ?? "";
+  const params = new URLSearchParams();
+  const q = request.nextUrl.searchParams.get("q") ?? "";
   const status = parseStatus(request.nextUrl.searchParams.get("status"));
-  const classification = parseClassification(request.nextUrl.searchParams.get("classification"));
+  const classification = parseClassification(
+    request.nextUrl.searchParams.get("classification"),
+  );
 
-  const data = await listHerbs({
-    query,
-    status,
-    classification,
-  });
+  if (q) params.set("q", q);
+  if (status) params.set("status", status);
+  if (classification) params.set("classification", classification);
 
-  return NextResponse.json({ data });
+  try {
+    const res = await fetch(`${API_URL}/herbarium?${params.toString()}`);
+    const data = (await res.json()) as { result?: unknown; message?: string };
+    return NextResponse.json({ data: data.result ?? [] });
+  } catch {
+    return NextResponse.json(
+      { error: "Erro ao buscar marcadores" },
+      { status: 503 },
+    );
+  }
 }
 
 export async function POST(request: NextRequest) {
+  const token = await getSessionToken();
+  if (!token) {
+    return NextResponse.json(
+      { error: "Autenticação necessária para adicionar marcadores." },
+      { status: 401 },
+    );
+  }
+
   const body = await request.json().catch(() => null);
 
   if (!body || typeof body !== "object") {
@@ -57,10 +73,13 @@ export async function POST(request: NextRequest) {
 
   const herbKeyRaw = typeof body.herbKey === "string" ? body.herbKey : "";
   const notes = typeof body.notes === "string" ? body.notes.trim() : "";
-  const addressLabel = typeof body.addressLabel === "string" ? body.addressLabel.trim() : "";
+  const addressLabel =
+    typeof body.addressLabel === "string" ? body.addressLabel.trim() : "";
   const lat = typeof body.lat === "number" ? body.lat : Number.NaN;
   const lng = typeof body.lng === "number" ? body.lng : Number.NaN;
-  const status = parseStatus(typeof body.status === "string" ? body.status : null);
+  const status = parseStatus(
+    typeof body.status === "string" ? body.status : null,
+  );
 
   if (!isHerbKey(herbKeyRaw) || !HERB_KEYS.includes(herbKeyRaw)) {
     return NextResponse.json(
@@ -104,14 +123,38 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const item = await createHerb({
-    herbKey: herbKeyRaw,
-    notes,
-    status,
-    lat,
-    lng,
-    addressLabel,
-  });
+  try {
+    const res = await fetch(`${API_URL}/herbarium`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        herbKey: herbKeyRaw,
+        notes,
+        status,
+        addressLabel,
+        lat,
+        lng,
+      }),
+    });
 
-  return NextResponse.json({ data: item }, { status: 201 });
+    const data = (await res.json()) as { result?: unknown; message?: string };
+
+    if (!res.ok) {
+      const msg =
+        typeof data.message === "string"
+          ? data.message
+          : "Não foi possível salvar.";
+      return NextResponse.json({ error: msg }, { status: res.status });
+    }
+
+    return NextResponse.json({ data: data.result }, { status: 201 });
+  } catch {
+    return NextResponse.json(
+      { error: "Erro ao conectar com o servidor" },
+      { status: 503 },
+    );
+  }
 }

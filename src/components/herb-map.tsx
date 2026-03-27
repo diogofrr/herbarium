@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import {
   Filter,
   Flower2,
   Leaf,
   LocateFixed,
+  LogIn,
+  LogOut,
   MapPin,
   Plus,
   Search,
@@ -15,8 +17,10 @@ import {
 } from "lucide-react";
 
 import { HerbMapProvider, useHerbMapContext } from "@/context/herb-map-context";
+import { useAuth } from "@/context/auth-context";
 import { useHerbs, useGeocode } from "@/hooks";
 import { HerbFormModal } from "@/components/herb-form-modal";
+import { AuthModal } from "@/components/auth-modal";
 import { AlertDialog, AlertDialogContent } from "@/components/ui/alert-dialog";
 import type { HerbClassification } from "@/types/herb";
 
@@ -53,6 +57,9 @@ function HerbMapInner() {
     handleModalError,
     handleDeleteConfirm,
   } = useHerbMapContext();
+
+  const { isAuthenticated, user, logout } = useAuth();
+  const [authOpen, setAuthOpen] = useState(false);
 
   const herbsQuery = useHerbs({ q: state.search, status: state.statusFilter });
   const geocodeQuery = useGeocode(state.addressQuery);
@@ -107,6 +114,28 @@ function HerbMapInner() {
           >
             {state.isSearchOpen ? <X size={18} /> : <Search size={18} />}
           </button>
+
+          {isAuthenticated ? (
+            <button
+              type="button"
+              className="fab-auth authenticated"
+              aria-label={`Sair (${user?.name ?? user?.email})`}
+              title={`Sair (${user?.name ?? user?.email})`}
+              onClick={logout}
+            >
+              <LogOut size={16} />
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="fab-auth"
+              aria-label="Entrar"
+              title="Entrar para adicionar marcadores"
+              onClick={() => setAuthOpen(true)}
+            >
+              <LogIn size={16} />
+            </button>
+          )}
 
           {state.isSearchOpen ? (
             <div className="search-panel">
@@ -221,9 +250,14 @@ function HerbMapInner() {
               <button
                 type="button"
                 className="fab-add"
-                onClick={() => dispatch({ type: "OPEN_CREATE_MODAL" })}
+                onClick={() =>
+                  isAuthenticated
+                    ? dispatch({ type: "OPEN_CREATE_MODAL" })
+                    : setAuthOpen(true)
+                }
               >
-                <Plus size={16} /> Adicionar aqui
+                <Plus size={16} />{" "}
+                {isAuthenticated ? "Adicionar aqui" : "Entrar para adicionar"}
               </button>
               <button
                 type="button"
@@ -254,6 +288,9 @@ function HerbMapInner() {
 
         {isLoading ? <div className="loading-chip">Atualizando…</div> : null}
       </section>
+
+      {/* ── Auth modal ───────────────────────────────────────────────────── */}
+      <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
 
       {/* ── Radix modals (rendered outside map section) ──────────────────── */}
       <HerbFormModal
