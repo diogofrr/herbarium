@@ -389,7 +389,6 @@ textarea:focus-visible {
   padding: 5px 10px;
   font-size: 0.78rem;
   box-shadow: var(--shadow);
-  backdrop-filter: blur(4px);
 }
 
 .stat-muita {
@@ -527,19 +526,20 @@ textarea:focus-visible {
   color: #effff8;
   font-size: 0.82rem;
   animation: enter 200ms ease;
-  backdrop-filter: blur(4px);
 }
 
 /* ─── Radix Dialog / AlertDialog ────────────────────────────────────────────── */
 
-/* Overlay — shared between Dialog and AlertDialog */
+/* Overlay — shared between Dialog and AlertDialog
+   (backdrop-filter removido: causava lag de digitação porque o GPU reblurrava
+   o mapa Leaflet a cada keystroke). */
 .dialog-overlay {
   position: fixed;
   inset: 0;
   z-index: 1000;
-  background: rgb(12 29 24 / 50%);
-  backdrop-filter: blur(2px);
+  background: rgb(12 29 24 / 62%);
   animation: fade-in 180ms ease;
+  will-change: opacity;
 }
 
 @keyframes fade-in {
@@ -564,6 +564,7 @@ textarea:focus-visible {
   overflow: auto;
   animation: slide-up 220ms cubic-bezier(0.34, 1.2, 0.64, 1);
   outline: none;
+  contain: layout paint;
 }
 
 @media (min-width: 820px) {
@@ -1391,8 +1392,12 @@ ul.form-error li {
 }
 
 .auth-submit:disabled {
-  opacity: 0.6;
+  opacity: 0.7;
   cursor: not-allowed;
+}
+
+.auth-spinner {
+  animation: spin 0.9s linear infinite;
 }
 
 .auth-switch {

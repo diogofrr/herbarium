@@ -9,16 +9,12 @@ import {
   type ReactNode,
 } from "react";
 import {
-  loginAction,
-  registerAction,
-  logoutAction,
-  getSessionAction,
-} from "@/actions/auth";
-
-type AuthUser = {
-  email: string;
-  name: string;
-};
+  loginRequest,
+  registerRequest,
+  logoutRequest,
+  sessionRequest,
+  type AuthUser,
+} from "@/lib/api/auth";
 
 type AuthContextValue = {
   user: AuthUser | null;
@@ -36,31 +32,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    getSessionAction()
-      .then((result) => {
-        if ("user" in result) setUser(result.user);
-      })
+    sessionRequest()
+      .then((u) => setUser(u))
       .finally(() => setIsLoading(false));
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
-    const result = await loginAction(email, password);
-    if ("error" in result) throw new Error(result.error);
-    setUser(result.user);
+    const next = await loginRequest(email, password);
+    setUser(next);
   }, []);
 
   const register = useCallback(
     async (name: string, email: string, password: string) => {
-      const result = await registerAction(name, email, password);
-      if ("error" in result) throw new Error(result.error);
-      setUser(result.user);
+      const next = await registerRequest(name, email, password);
+      setUser(next);
     },
     [],
   );
 
   const logout = useCallback(async () => {
     setUser(null);
-    await logoutAction();
+    await logoutRequest();
   }, []);
 
   return (

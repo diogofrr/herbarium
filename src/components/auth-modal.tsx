@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { X, LogIn, UserPlus, Leaf } from "lucide-react";
+import { memo, useState } from "react";
+import { Loader2, LogIn, UserPlus, Leaf, X } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { Dialog, DialogClose, DialogContent } from "@/components/ui/dialog";
 
@@ -13,7 +13,13 @@ type Props = {
 
 type Mode = "login" | "register";
 
-export function AuthModal({ open, onClose, onSuccess }: Props) {
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export const AuthModal = memo(function AuthModal({
+  open,
+  onClose,
+  onSuccess,
+}: Props) {
   const { login, register } = useAuth();
   const [mode, setMode] = useState<Mode>("login");
   const [name, setName] = useState("");
@@ -37,12 +43,26 @@ export function AuthModal({ open, onClose, onSuccess }: Props) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+
+    if (!EMAIL_RE.test(email)) {
+      setError("Informe um e-mail válido.");
+      return;
+    }
+    if (password.length < 8) {
+      setError("Senha deve ter ao menos 8 caracteres.");
+      return;
+    }
+    if (mode === "register" && name.trim().length < 2) {
+      setError("Informe seu nome.");
+      return;
+    }
+
     setLoading(true);
     try {
       if (mode === "login") {
         await login(email, password);
       } else {
-        await register(name, email, password);
+        await register(name.trim(), email, password);
       }
       reset();
       onClose();
@@ -93,7 +113,7 @@ export function AuthModal({ open, onClose, onSuccess }: Props) {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="auth-form">
+        <form onSubmit={handleSubmit} className="auth-form" noValidate>
           {mode === "register" && (
             <label className="auth-field">
               <span>Nome</span>
@@ -102,7 +122,7 @@ export function AuthModal({ open, onClose, onSuccess }: Props) {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Seu nome"
-                required
+                autoFocus
                 autoComplete="name"
                 disabled={loading}
               />
@@ -116,8 +136,9 @@ export function AuthModal({ open, onClose, onSuccess }: Props) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="email@exemplo.com"
-              required
+              autoFocus={mode === "login"}
               autoComplete="email"
+              inputMode="email"
               disabled={loading}
             />
           </label>
@@ -129,8 +150,6 @@ export function AuthModal({ open, onClose, onSuccess }: Props) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              required
-              minLength={8}
               autoComplete={
                 mode === "login" ? "current-password" : "new-password"
               }
@@ -138,11 +157,17 @@ export function AuthModal({ open, onClose, onSuccess }: Props) {
             />
           </label>
 
-          {error && <p className="auth-error">{error}</p>}
+          {error && (
+            <p className="auth-error" role="alert">
+              {error}
+            </p>
+          )}
 
           <button type="submit" className="auth-submit" disabled={loading}>
             {loading ? (
-              "Aguarde…"
+              <>
+                <Loader2 size={16} className="auth-spinner" /> Aguarde…
+              </>
             ) : mode === "login" ? (
               <>
                 <LogIn size={16} /> Entrar
@@ -175,4 +200,4 @@ export function AuthModal({ open, onClose, onSuccess }: Props) {
       </DialogContent>
     </Dialog>
   );
-}
+});
