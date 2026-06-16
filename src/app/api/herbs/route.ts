@@ -1,26 +1,14 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
-import {
-  HERB_CLASSIFICATIONS,
-  HERB_KEYS,
-  isHerbKey,
-} from "@/lib/herb-catalog";
 import { isWithinUberlandia } from "@/lib/uberlandia";
-import type { HerbClassification, HerbStatus } from "@/types/herb";
+import type { HerbStatus } from "@/types/herb";
 
 const API_URL = process.env.HERBARIUM_API_URL ?? "http://localhost:8080";
 const COOKIE_NAME = "herbarium_session";
 
 function parseStatus(value: string | null): HerbStatus | undefined {
   if (value === "pouca" || value === "muita") return value;
-  return undefined;
-}
-
-function parseClassification(value: string | null): HerbClassification | undefined {
-  if (value && HERB_CLASSIFICATIONS.includes(value as HerbClassification)) {
-    return value as HerbClassification;
-  }
   return undefined;
 }
 
@@ -33,13 +21,9 @@ export async function GET(request: NextRequest) {
   const params = new URLSearchParams();
   const q = request.nextUrl.searchParams.get("q") ?? "";
   const status = parseStatus(request.nextUrl.searchParams.get("status"));
-  const classification = parseClassification(
-    request.nextUrl.searchParams.get("classification"),
-  );
 
   if (q) params.set("q", q);
   if (status) params.set("status", status);
-  if (classification) params.set("classification", classification);
 
   try {
     const res = await fetch(`${API_URL}/herbarium?${params.toString()}`);
@@ -71,7 +55,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const herbKeyRaw = typeof body.herbKey === "string" ? body.herbKey : "";
+  const herbKey = typeof body.herbKey === "string" ? body.herbKey.trim() : "";
   const notes = typeof body.notes === "string" ? body.notes.trim() : "";
   const addressLabel =
     typeof body.addressLabel === "string" ? body.addressLabel.trim() : "";
@@ -81,25 +65,8 @@ export async function POST(request: NextRequest) {
     typeof body.status === "string" ? body.status : null,
   );
 
-  if (!isHerbKey(herbKeyRaw) || !HERB_KEYS.includes(herbKeyRaw)) {
-    return NextResponse.json(
-      { error: "Erva inválida para o catálogo." },
-      { status: 400 },
-    );
-  }
-
-  if (notes.length > 280) {
-    return NextResponse.json(
-      { error: "Observação deve ter no máximo 280 caracteres." },
-      { status: 400 },
-    );
-  }
-
-  if (addressLabel.length > 140) {
-    return NextResponse.json(
-      { error: "Endereço deve ter no máximo 140 caracteres." },
-      { status: 400 },
-    );
+  if (!herbKey) {
+    return NextResponse.json({ error: "Erva é obrigatória." }, { status: 400 });
   }
 
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
@@ -130,14 +97,7 @@ export async function POST(request: NextRequest) {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({
-        herbKey: herbKeyRaw,
-        notes,
-        status,
-        addressLabel,
-        lat,
-        lng,
-      }),
+      body: JSON.stringify({ herbKey, notes, status, addressLabel, lat, lng }),
     });
 
     const data = (await res.json()) as { result?: unknown; message?: string };

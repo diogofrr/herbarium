@@ -3,15 +3,17 @@
 import { useState } from "react";
 import { X, LogIn, UserPlus, Leaf } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
+import { Dialog, DialogClose, DialogContent } from "@/components/ui/dialog";
 
 type Props = {
   open: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 };
 
 type Mode = "login" | "register";
 
-export function AuthModal({ open, onClose }: Props) {
+export function AuthModal({ open, onClose, onSuccess }: Props) {
   const { login, register } = useAuth();
   const [mode, setMode] = useState<Mode>("login");
   const [name, setName] = useState("");
@@ -19,8 +21,6 @@ export function AuthModal({ open, onClose }: Props) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
-  if (!open) return null;
 
   function reset() {
     setName("");
@@ -38,7 +38,6 @@ export function AuthModal({ open, onClose }: Props) {
     e.preventDefault();
     setError(null);
     setLoading(true);
-
     try {
       if (mode === "login") {
         await login(email, password);
@@ -47,6 +46,7 @@ export function AuthModal({ open, onClose }: Props) {
       }
       reset();
       onClose();
+      onSuccess?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro desconhecido");
     } finally {
@@ -55,20 +55,37 @@ export function AuthModal({ open, onClose }: Props) {
   }
 
   return (
-    <div className="auth-overlay" role="dialog" aria-modal="true">
-      <div className="auth-modal">
-        <button
-          type="button"
-          className="auth-close"
-          aria-label="fechar"
-          onClick={onClose}
-        >
-          <X size={18} />
-        </button>
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        if (!v && !loading) onClose();
+      }}
+    >
+      <DialogContent
+        title={mode === "login" ? "Entrar no Herbarium" : "Criar conta"}
+        description={
+          mode === "login"
+            ? "Faça login para adicionar ou editar marcadores."
+            : "Crie uma conta para contribuir com o mapa."
+        }
+        className="auth-dialog"
+      >
+        <DialogClose asChild>
+          <button
+            type="button"
+            className="modal-close auth-close-btn"
+            aria-label="fechar"
+            disabled={loading}
+          >
+            <X size={18} />
+          </button>
+        </DialogClose>
 
         <div className="auth-header">
           <Leaf size={24} />
-          <h2>{mode === "login" ? "Entrar no Herbarium" : "Criar conta"}</h2>
+          <h2 className="modal-title">
+            {mode === "login" ? "Entrar no Herbarium" : "Criar conta"}
+          </h2>
           <p>
             {mode === "login"
               ? "Faça login para adicionar ou editar marcadores."
@@ -87,6 +104,7 @@ export function AuthModal({ open, onClose }: Props) {
                 placeholder="Seu nome"
                 required
                 autoComplete="name"
+                disabled={loading}
               />
             </label>
           )}
@@ -100,6 +118,7 @@ export function AuthModal({ open, onClose }: Props) {
               placeholder="email@exemplo.com"
               required
               autoComplete="email"
+              disabled={loading}
             />
           </label>
 
@@ -111,10 +130,11 @@ export function AuthModal({ open, onClose }: Props) {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               required
-              minLength={6}
+              minLength={8}
               autoComplete={
                 mode === "login" ? "current-password" : "new-password"
               }
+              disabled={loading}
             />
           </label>
 
@@ -152,7 +172,7 @@ export function AuthModal({ open, onClose }: Props) {
             </p>
           )}
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

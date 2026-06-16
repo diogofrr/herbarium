@@ -6,7 +6,6 @@ import {
   useContext,
   useEffect,
   useState,
-  useTransition,
   type ReactNode,
 } from "react";
 import {
@@ -27,7 +26,7 @@ type AuthContextValue = {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -35,11 +34,10 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [, startTransition] = useTransition();
 
   useEffect(() => {
     getSessionAction()
-      .then(result => {
+      .then((result) => {
         if ("user" in result) setUser(result.user);
       })
       .finally(() => setIsLoading(false));
@@ -60,12 +58,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [],
   );
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
     setUser(null);
-    startTransition(() => {
-      void logoutAction();
-    });
-  }, [startTransition]);
+    await logoutAction();
+  }, []);
 
   return (
     <AuthContext.Provider

@@ -1,7 +1,6 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
-import { isHerbKey } from "@/lib/herb-catalog";
 import type { HerbStatus } from "@/types/herb";
 
 const API_URL = process.env.HERBARIUM_API_URL ?? "http://localhost:8080";
@@ -35,7 +34,7 @@ export async function PATCH(
 
   if (!body || typeof body !== "object") {
     return NextResponse.json(
-      { error: "Corpo da requisicao invalido." },
+      { error: "Corpo da requisição inválido." },
       { status: 400 },
     );
   }
@@ -48,33 +47,14 @@ export async function PATCH(
   if (status) patch.status = status;
 
   if (typeof body.notes === "string") patch.notes = body.notes;
-  if (typeof body.addressLabel === "string")
-    patch.addressLabel = body.addressLabel;
-
-  if (typeof body.herbKey === "string" && isHerbKey(body.herbKey)) {
-    patch.herbKey = body.herbKey;
+  if (typeof body.addressLabel === "string") patch.addressLabel = body.addressLabel;
+  if (typeof body.herbKey === "string" && body.herbKey.trim()) {
+    patch.herbKey = body.herbKey.trim();
   }
 
   if (Object.keys(patch).length === 0) {
     return NextResponse.json(
-      { error: "Nenhum campo valido para atualizacao." },
-      { status: 400 },
-    );
-  }
-
-  if (typeof patch.notes === "string" && patch.notes.length > 280) {
-    return NextResponse.json(
-      { error: "Observacao deve ter no maximo 280 caracteres." },
-      { status: 400 },
-    );
-  }
-
-  if (
-    typeof patch.addressLabel === "string" &&
-    patch.addressLabel.length > 140
-  ) {
-    return NextResponse.json(
-      { error: "Endereco deve ter no maximo 140 caracteres." },
+      { error: "Nenhum campo válido para atualização." },
       { status: 400 },
     );
   }
@@ -94,7 +74,7 @@ export async function PATCH(
     if (!res.ok) {
       if (res.status === 404) {
         return NextResponse.json(
-          { error: "Marcacao nao encontrada." },
+          { error: "Marcação não encontrada." },
           { status: 404 },
         );
       }
@@ -137,7 +117,7 @@ export async function DELETE(
     if (!res.ok) {
       if (res.status === 404) {
         return NextResponse.json(
-          { error: "Marcacao nao encontrada." },
+          { error: "Marcação não encontrada." },
           { status: 404 },
         );
       }

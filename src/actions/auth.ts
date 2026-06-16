@@ -105,7 +105,7 @@ export async function getSessionAction(): Promise<AuthResult> {
 
     const payload = JSON.parse(
       Buffer.from(payloadB64, "base64").toString("utf-8"),
-    ) as { email?: string; sub?: string; exp?: number };
+    ) as { email?: string; name?: string; sub?: string; exp?: number };
 
     // Check if expired
     if (payload.exp && payload.exp * 1000 < Date.now()) {
@@ -114,7 +114,10 @@ export async function getSessionAction(): Promise<AuthResult> {
     }
 
     return {
-      user: { email: payload.email ?? "", name: payload.email ?? "" },
+      user: {
+        email: payload.email ?? "",
+        name: payload.name ?? payload.email ?? "",
+      },
     };
   } catch {
     cookieStore.delete(COOKIE_NAME);

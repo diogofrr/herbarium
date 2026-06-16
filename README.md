@@ -1,51 +1,50 @@
 # Herbarium Uberlândia
 
-Aplicação mobile-first com Next.js + BFF para mapear ervas colaborativamente em Uberlândia - MG.
+Aplicação Next.js mobile-first para mapear ervas colaborativamente em Uberlândia - MG.
 
 ## Stack
 
-- Next.js (App Router)
-- API Routes como BFF
-- Leaflet + React-Leaflet + OpenStreetMap (gratuito, sem chave de API)
-- Persistência local em arquivo JSON (`data/herbs.json`)
+- Next.js (App Router) + React 19
+- Leaflet + React-Leaflet (OpenStreetMap, sem chave de API)
+- TanStack Query + TanStack Virtual
+- Radix UI (Dialog, AlertDialog, Popover, Select)
+- React Hook Form + Zod
+- BFF (rotas `src/app/api/*`) faz proxy autenticado para a API NestJS (`api-crm`).
+- Catálogo de ervas vive no banco do `api-crm` e é consultado via `GET /api/herbs/catalog`.
 
 ## Requisitos
 
 - Node.js 20+
+- API NestJS rodando (ver `../api-crm/README.md`) e variável `HERBARIUM_API_URL` apontando para ela (default `http://localhost:8080`).
 
 ## Configuração
 
-1. Instale dependências:
-
 ```bash
 npm install
-```
-
-1. Rode em desenvolvimento:
-
-```bash
 npm run dev
 ```
 
-1. Acesse `http://localhost:3000`
+Acesse `http://localhost:3000`.
 
 ## Funcionalidades
 
-- Busca por nome/observação da erva
-- Filtro por status: `muita` ou `pouca`
-- Marcação no mapa com clique/touch
-- Edição de status direto no marcador
-- Remoção de marcador quando não houver erva no local
-- Restrição geográfica no front e no back: somente Uberlândia - MG
+- Busca por erva, observação, endereço ou orixá (debounce automático)
+- Filtro por status (`muita` ou `pouca`)
+- Marcação no mapa por clique/touch dentro dos limites de Uberlândia
+- Edição e remoção via popup do marcador
+- Catálogo virtualizado de 200+ ervas com keyboard nav (↑/↓/Enter)
+- Geolocalização do usuário (rejeita coordenadas fora de Uberlândia)
 
-## Endpoints BFF
+## Rotas BFF
 
-- `GET /api/herbs?q=&status=`: lista marcações
-- `POST /api/herbs`: cria nova marcação
-- `PATCH /api/herbs/:id`: atualiza status
-- `DELETE /api/herbs/:id`: remove marcação
+- `GET /api/herbs?q=&status=` — lista marcações (proxy)
+- `POST /api/herbs` — cria marcação (requer cookie de sessão)
+- `PATCH /api/herbs/:id` — atualiza marcação
+- `DELETE /api/herbs/:id` — remove marcação
+- `GET /api/herbs/catalog` — catálogo (cacheável)
 
-## Observações
+## Variáveis de ambiente
 
-- O armazenamento atual é local (arquivo JSON), ideal para MVP/protótipo.
-- Para produção, substitua por banco de dados e autenticação de usuários.
+| Variável | Default | Função |
+|----------|---------|--------|
+| `HERBARIUM_API_URL` | `http://localhost:8080` | URL da API NestJS |

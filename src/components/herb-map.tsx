@@ -4,36 +4,26 @@ import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import {
   Filter,
-  Flower2,
-  Leaf,
   LocateFixed,
   LogIn,
   LogOut,
   MapPin,
   Plus,
   Search,
-  Trees,
   X,
 } from "lucide-react";
 
 import { HerbMapProvider, useHerbMapContext } from "@/context/herb-map-context";
 import { useAuth } from "@/context/auth-context";
-import { useHerbs, useGeocode } from "@/hooks";
+import { useHerbs, useGeocode, useDebouncedValue } from "@/hooks";
 import { HerbFormModal } from "@/components/herb-form-modal";
 import { AuthModal } from "@/components/auth-modal";
 import { AlertDialog, AlertDialogContent } from "@/components/ui/alert-dialog";
-import type { HerbClassification } from "@/types/herb";
 
 const LeafletMap = dynamic(() => import("@/components/leaflet-map"), {
   ssr: false,
   loading: () => <div className="map-placeholder">Carregando mapa…</div>,
 });
-
-function classIcon(kind: HerbClassification) {
-  if (kind === "flor") return <Flower2 size={14} />;
-  if (kind === "arvore") return <Trees size={14} />;
-  return <Leaf size={14} />;
-}
 
 export default function HerbMap() {
   return (
@@ -60,8 +50,12 @@ function HerbMapInner() {
 
   const { isAuthenticated, user, logout } = useAuth();
   const [authOpen, setAuthOpen] = useState(false);
+  const [isAddressOpen, setIsAddressOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [confirmLogout, setConfirmLogout] = useState(false);
 
-  const herbsQuery = useHerbs({ q: state.search, status: state.statusFilter });
+  const debouncedSearch = useDebouncedValue(state.search, 300);
+  const herbsQuery = useHerbs({ q: debouncedSearch, status: state.statusFilter });
   const geocodeQuery = useGeocode(state.addressQuery);
 
   const markers = herbsQuery.data ?? [];
@@ -75,6 +69,13 @@ function HerbMapInner() {
     const t = setTimeout(() => dispatch({ type: "CLEAR_ERROR" }), 4000);
     return () => clearTimeout(t);
   }, [state.errorMessage, dispatch]);
+
+  // Auto-dismiss success toast
+  useEffect(() => {
+    if (!successMessage) return;
+    const t = setTimeout(() => setSuccessMessage(""), 4000);
+    return () => clearTimeout(t);
+  }, [successMessage]);
 
   const counters = useMemo(
     () =>
@@ -121,7 +122,7 @@ function HerbMapInner() {
               className="fab-auth authenticated"
               aria-label={`Sair (${user?.name ?? user?.email})`}
               title={`Sair (${user?.name ?? user?.email})`}
-              onClick={logout}
+              onClick={() => setConfirmLogout(true)}
             >
               <LogOut size={16} />
             </button>
@@ -146,48 +147,75 @@ function HerbMapInner() {
                 placeholder="Buscar por erva, propriedade ou santo"
                 aria-label="buscar ervas"
               />
+              {state.search ? (
+                <button
+                  type="button"
+                  className="search-clear"
+                  aria-label="limpar busca"
+                  onClick={() => dispatch({ type: "SET_SEARCH", payload: "" })}
+                >
+                  <X size={14} />
+                </button>
+              ) : null}
             </div>
           ) : null}
 
-          <div className="address-panel">
-            <MapPin size={16} />
-            <input
-              value={state.addressQuery}
-              onChange={(e) => dispatch({ type: "SET_ADDRESS_QUERY", payload: e.target.value })}
-              placeholder="Pesquisar endereço em Uberlândia"
-              aria-label="buscar endereço"
-            />
-            {state.addressQuery ? (
-              <button
-                type="button"
-                className="address-clear"
-                aria-label="limpar endereço"
-                onClick={() => dispatch({ type: "CLEAR_ADDRESS" })}
-              >
-                <X size={14} />
-              </button>
-            ) : null}
-          </div>
+          <button
+            type="button"
+            className={`fab fab-address${isAddressOpen ? " active" : ""}`}
+            aria-label={isAddressOpen ? "fechar pesquisa de endereço" : "pesquisar endereço"}
+            onClick={() => {
+              setIsAddressOpen((v) => !v);
+              if (isAddressOpen) dispatch({ type: "CLEAR_ADDRESS" });
+            }}
+          >
+            <MapPin size={18} />
+          </button>
 
-          {state.addressQuery.trim().length >= 3 ? (
-            <div className="address-results">
-              {isAddressLoading ? <p className="address-loading">Buscando…</p> : null}
-              {!isAddressLoading && addressResults.length === 0 ? (
-                <p>Nenhum resultado encontrado</p>
+          {isAddressOpen ? (
+            <>
+              <div className="address-panel">
+                <MapPin size={16} />
+                <input
+                  autoFocus
+                  value={state.addressQuery}
+                  onChange={(e) => dispatch({ type: "SET_ADDRESS_QUERY", payload: e.target.value })}
+                  placeholder="Pesquisar endereço em Uberlândia"
+                  aria-label="buscar endereço"
+                />
+                {state.addressQuery ? (
+                  <button
+                    type="button"
+                    className="address-clear"
+                    aria-label="limpar endereço"
+                    onClick={() => dispatch({ type: "CLEAR_ADDRESS" })}
+                  >
+                    <X size={14} />
+                  </button>
+                ) : null}
+              </div>
+
+              {state.addressQuery.trim().length >= 3 ? (
+                <div className="address-results">
+                  {isAddressLoading ? <p className="address-loading">Buscando…</p> : null}
+                  {!isAddressLoading && addressResults.length === 0 ? (
+                    <p>Nenhum resultado encontrado</p>
+                  ) : null}
+                  {addressResults.map((r) => (
+                    <button
+                      type="button"
+                      key={`${r.lat}-${r.lng}`}
+                      onClick={() => {
+                        dispatch({ type: "SET_ADDRESS_QUERY", payload: r.label });
+                        focusOn(r.lat, r.lng, 17);
+                      }}
+                    >
+                      {r.label}
+                    </button>
+                  ))}
+                </div>
               ) : null}
-              {addressResults.map((r) => (
-                <button
-                  type="button"
-                  key={`${r.lat}-${r.lng}`}
-                  onClick={() => {
-                    dispatch({ type: "SET_ADDRESS_QUERY", payload: r.label });
-                    focusOn(r.lat, r.lng, 17);
-                  }}
-                >
-                  {r.label}
-                </button>
-              ))}
-            </div>
+            </>
           ) : null}
         </div>
 
@@ -234,11 +262,6 @@ function HerbMapInner() {
 
         {/* ── Bottom overlay ─────────────────────────────────────────── */}
         <div className="overlay-bottom">
-          <div className="legend">
-            <span>{classIcon("flor")} Flor</span>
-            <span>{classIcon("erva")} Erva</span>
-            <span>{classIcon("arvore")} Árvore</span>
-          </div>
           <div className="mini-stats">
             <span>Total {counters.total}</span>
             <span className="stat-muita">Muita {counters.muita}</span>
@@ -271,6 +294,21 @@ function HerbMapInner() {
           ) : null}
         </div>
 
+        {/* ── Success toast ──────────────────────────────────────────── */}
+        {successMessage ? (
+          <div className="success-toast" role="alert">
+            <span>{successMessage}</span>
+            <button
+              type="button"
+              className="toast-close"
+              aria-label="fechar"
+              onClick={() => setSuccessMessage("")}
+            >
+              <X size={14} />
+            </button>
+          </div>
+        ) : null}
+
         {/* ── Error toast ────────────────────────────────────────────── */}
         {state.errorMessage ? (
           <div className="error-toast" role="alert">
@@ -290,7 +328,11 @@ function HerbMapInner() {
       </section>
 
       {/* ── Auth modal ───────────────────────────────────────────────────── */}
-      <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
+      <AuthModal
+        open={authOpen}
+        onClose={() => setAuthOpen(false)}
+        onSuccess={() => setSuccessMessage("Login realizado com sucesso!")}
+      />
 
       {/* ── Radix modals (rendered outside map section) ──────────────────── */}
       <HerbFormModal
@@ -310,12 +352,33 @@ function HerbMapInner() {
       >
         <AlertDialogContent
           title="Remover localização?"
-          description={`Deseja remover ${state.confirmDelete?.herbName ?? ""} do mapa? Esta ação não pode ser desfeita.`}
+          description={`Deseja remover ${state.confirmDelete?.catalog?.name ?? "este marcador"} do mapa? Esta ação não pode ser desfeita.`}
           confirmLabel="Remover"
           cancelLabel="Cancelar"
           danger
           onConfirm={handleDeleteConfirm}
           onCancel={() => dispatch({ type: "SET_CONFIRM_DELETE", payload: null })}
+        />
+      </AlertDialog>
+
+      {/* ── Logout confirmation ──────────────────────────────────────────── */}
+      <AlertDialog
+        open={confirmLogout}
+        onOpenChange={(v) => {
+          if (!v) setConfirmLogout(false);
+        }}
+      >
+        <AlertDialogContent
+          title="Sair da conta?"
+          description="Você precisará entrar novamente para adicionar ou editar marcadores."
+          confirmLabel="Sair"
+          cancelLabel="Cancelar"
+          onConfirm={() => {
+            setConfirmLogout(false);
+            void logout();
+            setSuccessMessage("Logout realizado com sucesso!");
+          }}
+          onCancel={() => setConfirmLogout(false)}
         />
       </AlertDialog>
     </main>

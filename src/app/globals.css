@@ -51,8 +51,9 @@ textarea:focus-visible {
 
 .map-screen {
   position: relative;
-  width: 100vw;
+  width: 100%;
   height: 100dvh;
+  overflow: hidden;
 }
 
 .map-full {
@@ -81,21 +82,28 @@ textarea:focus-visible {
 }
 
 .overlay-top {
-  top: 12px;
+  top: calc(12px + env(safe-area-inset-top));
   left: 12px;
   right: 12px;
-  display: grid;
-  grid-template-columns: auto 1fr;
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
-  align-items: start;
+  align-items: center;
+}
+
+.overlay-top > .search-panel,
+.overlay-top > .address-panel,
+.overlay-top > .address-results {
+  flex: 1 1 100%;
 }
 
 .overlay-right {
   right: 12px;
-  top: 168px;
-  display: grid;
+  top: calc(64px + env(safe-area-inset-top));
+  display: flex;
+  flex-direction: column;
   gap: 10px;
-  justify-items: end;
+  align-items: flex-end;
 }
 
 .overlay-bottom {
@@ -109,8 +117,8 @@ textarea:focus-visible {
 /* ─── FABs ──────────────────────────────────────────────────────────────────── */
 
 .fab {
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   border: 0;
   border-radius: 999px;
   display: grid;
@@ -152,6 +160,19 @@ textarea:focus-visible {
   background: #0a2820;
 }
 
+.fab-address {
+  background: #113d31;
+  color: #f2fff6;
+}
+
+.fab-address:hover:not(:disabled) {
+  background: #1a5244;
+}
+
+.fab-address.active {
+  background: #0a2820;
+}
+
 .fab-active {
   background: var(--accent);
   color: #fff;
@@ -178,15 +199,18 @@ textarea:focus-visible {
 
 .search-panel {
   animation: enter 180ms ease;
+  position: relative;
+  display: flex;
+  align-items: center;
 }
 
 .search-panel input {
   width: 100%;
-  height: 42px;
+  height: 44px;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: var(--panel);
-  padding: 0 16px;
+  padding: 0 44px 0 16px;
   box-shadow: var(--shadow);
   transition: border-color var(--transition), box-shadow var(--transition);
 }
@@ -197,15 +221,35 @@ textarea:focus-visible {
   outline: none;
 }
 
+.search-clear {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 0;
+  background: transparent;
+  padding: 8px;
+  color: var(--muted);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  transition: color var(--transition), background var(--transition);
+}
+
+.search-clear:hover {
+  color: var(--text);
+  background: #f0f4f2;
+}
+
 /* ─── Address panel ──────────────────────────────────────────────────────────── */
 
 .address-panel {
-  grid-column: 1 / -1;
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 8px;
-  min-height: 42px;
+  min-height: 44px;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 999px;
@@ -213,6 +257,7 @@ textarea:focus-visible {
   box-shadow: var(--shadow);
   transition: border-color var(--transition), box-shadow var(--transition);
   color: var(--muted);
+  width: 100%;
 }
 
 .address-panel:focus-within {
@@ -246,14 +291,14 @@ textarea:focus-visible {
 }
 
 .address-results {
-  grid-column: 1 / -1;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  max-height: 220px;
+  max-height: min(220px, 40dvh);
   overflow: auto;
   box-shadow: var(--shadow-lg);
   animation: enter 150ms ease;
+  width: 100%;
 }
 
 .address-results p,
@@ -401,7 +446,7 @@ textarea:focus-visible {
 
 .error-toast {
   position: absolute;
-  bottom: calc(90px + env(safe-area-inset-bottom));
+  top: calc(64px + env(safe-area-inset-top));
   left: 50%;
   transform: translateX(-50%);
   z-index: 950;
@@ -440,6 +485,31 @@ textarea:focus-visible {
 
 .toast-close:hover {
   opacity: 1;
+}
+
+.success-toast {
+  position: absolute;
+  top: calc(64px + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 950;
+  border-radius: 10px;
+  padding: 10px 14px;
+  box-shadow: var(--shadow-lg);
+  background: #edf7ed;
+  border: 1px solid #b7ddb7;
+  color: #1e4620;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+  max-width: calc(100vw - 24px);
+  animation: enter 200ms ease;
+  font-size: 0.88rem;
+}
+
+.success-toast span {
+  white-space: normal;
 }
 
 /* ─── Loading chip ──────────────────────────────────────────────────────────── */
@@ -791,7 +861,8 @@ textarea:focus-visible {
 .popup-actions button {
   border: 0;
   border-radius: 8px;
-  padding: 7px;
+  padding: 10px;
+  min-height: 40px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1038,6 +1109,7 @@ textarea:focus-visible {
 .combobox-list {
   overflow-y: auto;
   overscroll-behavior: contain;
+  max-height: min(288px, 50dvh);
 }
 
 .combobox-list::-webkit-scrollbar {
@@ -1068,7 +1140,8 @@ textarea:focus-visible {
 }
 
 .combobox-item:hover,
-.combobox-item:focus-visible {
+.combobox-item:focus-visible,
+.combobox-item.highlighted {
   background: #f0faf4;
 }
 
@@ -1076,6 +1149,10 @@ textarea:focus-visible {
   background: #e8f7f0;
   color: var(--accent);
   font-weight: 600;
+}
+
+.combobox-item.selected.highlighted {
+  background: #dff1e7;
 }
 
 .combobox-item-check {
@@ -1134,6 +1211,16 @@ textarea:focus-visible {
   color: #7f2515;
   border-radius: 8px;
   font-size: 0.85rem;
+  list-style: none;
+}
+
+ul.form-error {
+  padding-left: 12px;
+}
+
+ul.form-error li {
+  margin-left: 4px;
+  list-style: disc inside;
 }
 
 .modal-title {
@@ -1183,13 +1270,27 @@ textarea:focus-visible {
 
 /* ─── Responsive ────────────────────────────────────────────────────────────── */
 
+@media (max-width: 480px) {
+  .dialog-content {
+    padding: 14px;
+  }
+
+  .mini-stats {
+    font-size: 0.74rem;
+  }
+
+  .mini-stats span {
+    padding: 4px 8px;
+  }
+
+  .map-popup {
+    width: min(260px, 80vw);
+  }
+}
+
 @media (min-width: 820px) {
   .overlay-top {
     max-width: 640px;
-  }
-
-  .overlay-right {
-    top: 140px;
   }
 
   .modal-backdrop {
@@ -1197,48 +1298,17 @@ textarea:focus-visible {
   }
 }
 
-/* ─── Auth Modal ─────────────────────────────────────────────────────────────── */
+/* ─── Auth Modal (inside Radix Dialog) ───────────────────────────────────────── */
 
-.auth-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  background: rgb(0 0 0 / 40%);
-  display: grid;
-  place-items: center;
-  padding: 1rem;
+.auth-dialog {
+  max-width: 420px;
+  padding-top: 14px;
 }
 
-.auth-modal {
-  background: var(--panel);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-lg);
-  padding: 2rem 1.5rem 1.5rem;
-  width: 100%;
-  max-width: 380px;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-
-.auth-close {
+.auth-close-btn {
   position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
-  background: transparent;
-  border: none;
-  color: var(--muted);
-  cursor: pointer;
-  padding: 0.25rem;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-}
-
-.auth-close:hover {
-  color: var(--text);
-  background: var(--line);
+  top: 10px;
+  right: 10px;
 }
 
 .auth-header {
@@ -1354,8 +1424,8 @@ textarea:focus-visible {
   background: var(--panel);
   border: 1.5px solid var(--line);
   border-radius: 50%;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1363,6 +1433,7 @@ textarea:focus-visible {
   box-shadow: var(--shadow);
   color: var(--accent);
   transition: background var(--transition), border-color var(--transition);
+  flex-shrink: 0;
 }
 
 .fab-auth:hover {
