@@ -1,4 +1,9 @@
-export type AuthUser = { email: string; name: string };
+export type AuthUser = {
+  id: string;
+  email: string;
+  name: string;
+  role: "USER" | "HERBMASTER" | "ADMIN";
+};
 
 async function parseError(res: Response): Promise<string> {
   try {

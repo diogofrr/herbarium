@@ -1,50 +1,41 @@
-# Herbarium Uberlândia
+# Herbarium
 
-Aplicação Next.js mobile-first para mapear ervas colaborativamente em Uberlândia - MG.
+Guia de ervas da Umbanda e mapa colaborativo de marcações (Uberlândia, MG). Mobile-first.
+
+- **Mapa** (`/`): marcações de ervas com erva, orixás, povos, temperatura e função de cada uma.
+- **Identificar planta** (`/identificar`): foto da planta identificada pelo Pl@ntNet (exige login); se a espécie estiver no guia, leva à página da erva.
+- **Guia de ervas** (`/ervas`): wiki com busca (sem acento) e filtros por orixá, povo, temperatura e função.
+- **Página da erva** (`/ervas/[slug]`): texto da wiki, fotos reais com crédito, cuidados e fontes.
+
+O backend é a **`herbarium-api`** (pasta irmã `../herbarium-api`), com banco próprio.
 
 ## Stack
 
-- Next.js (App Router) + React 19
-- Leaflet + React-Leaflet (OpenStreetMap, sem chave de API)
-- TanStack Query + TanStack Virtual
-- Radix UI (Dialog, AlertDialog, Popover, Select)
-- React Hook Form + Zod
-- BFF (rotas `src/app/api/*`) faz proxy autenticado para a API NestJS (`api-crm`).
-- Catálogo de ervas vive no banco do `api-crm` e é consultado via `GET /api/herbs/catalog`.
+- Next.js 16 (App Router) + React 19, Server Components com cache (ISR) para o guia
+- Leaflet + React-Leaflet (OpenStreetMap, sem chave)
+- TanStack Query, React Hook Form + Zod, Radix UI (diálogos)
+- BFF em `src/app/api/*`: guarda o JWT em cookie `httpOnly` e repassa as chamadas para a API
 
-## Requisitos
-
-- Node.js 20+
-- API NestJS rodando (ver `../api-crm/README.md`) e variável `HERBARIUM_API_URL` apontando para ela (default `http://localhost:8080`).
-
-## Configuração
+## Rodando
 
 ```bash
+cp .env.example .env.local   # HERBARIUM_API_URL e JWT_SECRET (igual ao da API)
 npm install
-npm run dev
+npm run dev                  # http://localhost:3000
 ```
 
-Acesse `http://localhost:3000`.
+Suba antes a `herbarium-api` (veja o README dela).
 
-## Funcionalidades
+## Fotos
 
-- Busca por erva, observação, endereço ou orixá (debounce automático)
-- Filtro por status (`muita` ou `pouca`)
-- Marcação no mapa por clique/touch dentro dos limites de Uberlândia
-- Edição e remoção via popup do marcador
-- Catálogo virtualizado de 200+ ervas com keyboard nav (↑/↓/Enter)
-- Geolocalização do usuário (rejeita coordenadas fora de Uberlândia)
-
-## Rotas BFF
-
-- `GET /api/herbs?q=&status=` — lista marcações (proxy)
-- `POST /api/herbs` — cria marcação (requer cookie de sessão)
-- `PATCH /api/herbs/:id` — atualiza marcação
-- `DELETE /api/herbs/:id` — remove marcação
-- `GET /api/herbs/catalog` — catálogo (cacheável)
+As fotos ficam em `public/herbs/<slug>-N.webp` (até 300 KB cada, geralmente 40 a 150 KB) e
+`<slug>-N-thumb.webp` para listas e mapa. Todas vêm do Wikimedia Commons com licença livre;
+crédito e licença aparecem na página de cada erva.
 
 ## Variáveis de ambiente
 
-| Variável | Default | Função |
-|----------|---------|--------|
-| `HERBARIUM_API_URL` | `http://localhost:8080` | URL da API NestJS |
+| Variável | Padrão | Função |
+|----------|--------|--------|
+| `HERBARIUM_API_URL` | `http://localhost:8081` | URL da herbarium-api |
+| `JWT_SECRET` | (obrigatória) | Mesmo segredo da API; usado para validar a assinatura da sessão |
+| `PLANTNET_API_KEY` | (opcional) | Chave do Pl@ntNet; só no servidor |

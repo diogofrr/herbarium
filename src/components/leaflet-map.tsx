@@ -1,41 +1,30 @@
 "use client";
 
-import { memo, useEffect, useMemo } from "react";
+import { memo, useEffect, useMemo, useRef } from "react";
 import L from "leaflet";
-import { Pencil, Trash2 } from "lucide-react";
 import {
   MapContainer,
   Marker,
-  Popup,
   Rectangle,
   TileLayer,
   useMap,
   useMapEvents,
 } from "react-leaflet";
+import { UBERLANDIA_BOUNDS, UBERLANDIA_CENTER, isWithinUberlandia } from "@/lib/uberlandia";
+import type { HerbMarker, Temperature } from "@/types/herb";
 
-import {
-  UBERLANDIA_BOUNDS,
-  UBERLANDIA_CENTER,
-  isWithinUberlandia,
-} from "@/lib/uberlandia";
-import type { HerbMarker } from "@/types/herb";
-
-type FocusPoint = {
-  lat: number;
-  lng: number;
-  zoom?: number;
-  nonce: number;
-};
+export type FocusPoint = { lat: number; lng: number; zoom?: number; nonce: number };
 
 type Props = {
   markers: HerbMarker[];
+  selectedId: string | null;
   pendingPoint: { lat: number; lng: number } | null;
   userLocation: { lat: number; lng: number } | null;
   focusPoint: FocusPoint | null;
+  placing: boolean;
+  onSelect: (marker: HerbMarker) => void;
   onMapClick: (lat: number, lng: number) => void;
   onOutOfBounds: () => void;
-  onEdit: (marker: HerbMarker) => void;
-  onDelete: (marker: HerbMarker) => void;
 };
 
 const LEAFLET_BOUNDS: [[number, number], [number, number]] = [
@@ -43,37 +32,30 @@ const LEAFLET_BOUNDS: [[number, number], [number, number]] = [
   [UBERLANDIA_BOUNDS.north, UBERLANDIA_BOUNDS.east],
 ];
 
-function statusColor(status: HerbMarker["status"]): string {
-  return status === "muita" ? "#19b66f" : "#f5b301";
-}
+export const TEMPERATURE_COLOR: Record<Temperature, string> = {
+  quente: "#b93a2a",
+  morna: "#c98a12",
+  fria: "#20639b",
+};
 
-function riskColor(hasRisk: boolean, riskTags: string[]): string {
-  if (!hasRisk) return "#2b6240";
-  const t = riskTags.map((r) => r.toLowerCase()).join(" ");
-  if (t.includes("letal") || t.includes("tóxic") || t.includes("toxic")) {
-    return "#9f2f23";
-  }
-  return "#a06020";
-}
-
-function markerIcon(marker: HerbMarker) {
-  const fill = riskColor(marker.catalog.hasRisk, marker.catalog.riskTags);
-  const ring = statusColor(marker.status);
-  const initial = marker.catalog.name.charAt(0).toUpperCase();
+function pinIcon(marker: HerbMarker, selected: boolean) {
+  const big = marker.status === "muita";
+  const size = big ? 40 : 32;
+  const color = TEMPERATURE_COLOR[marker.herb.temperature];
+  const initial = marker.herb.name.charAt(0).toUpperCase();
   return L.divIcon({
     className: "",
-    html: `<span style="display:grid;place-items:center;width:32px;height:32px;border-radius:999px;background:${fill};border:3px solid ${ring};color:#fff;font-weight:700;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.35);transition:transform .15s">${initial}</span>`,
-    iconSize: [32, 32],
-    iconAnchor: [16, 16],
-    popupAnchor: [0, -20],
+    html: `<span class="herb-pin${selected ? " is-selected" : ""}" style="width:${size}px;height:${size}px;background:${color};font-size:${big ? 16 : 13}px"><span>${initial}</span></span>`,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size],
   });
 }
 
 const pendingIcon = L.divIcon({
   className: "",
-  html: '<span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:999px;background:#2279d5;color:#fff;border:2px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,.35);font-size:21px;font-weight:700;line-height:1;animation:pulse 1.2s ease infinite">+</span>',
-  iconSize: [32, 32],
-  iconAnchor: [16, 16],
+  html: '<span class="herb-pin" style="width:38px;height:38px;background:#1d2a21;font-size:22px"><span>+</span></span>',
+  iconSize: [38, 38],
+  iconAnchor: [19, 38],
 });
 
 const userIcon = L.divIcon({
@@ -86,12 +68,11 @@ const userIcon = L.divIcon({
 function ClickHandler({
   onMapClick,
   onOutOfBounds,
-}: {
-  onMapClick: (lat: number, lng: number) => void;
-  onOutOfBounds: () => void;
-}) {
+  placing,
+}: Pick<Props, "onMapClick" | "onOutOfBounds" | "placing">) {
   useMapEvents({
     click(e) {
+      if (!placing) return;
       const { lat, lng } = e.latlng;
       if (!isWithinUberlandia(lat, lng)) {
         onOutOfBounds();
@@ -107,115 +88,68 @@ function FlyToFocus({ focusPoint }: { focusPoint: FocusPoint | null }) {
   const map = useMap();
   useEffect(() => {
     if (!focusPoint) return;
-    map.flyTo([focusPoint.lat, focusPoint.lng], focusPoint.zoom ?? 16, {
-      duration: 0.8,
-    });
+    map.flyTo([focusPoint.lat, focusPoint.lng], focusPoint.zoom ?? 16, { duration: 0.8 });
   }, [focusPoint, map]);
   return null;
 }
 
-const HerbMarkerPin = memo(function HerbMarkerPin({
+/** Enquadra os pontos existentes na primeira vez que eles chegam. */
+function FitToMarkers({ markers }: { markers: HerbMarker[] }) {
+  const map = useMap();
+  const done = useRef(false);
+  useEffect(() => {
+    if (done.current || markers.length === 0) return;
+    done.current = true;
+    const bounds = L.latLngBounds(markers.map((m) => [m.lat, m.lng] as [number, number]));
+    map.fitBounds(bounds, { padding: [70, 70], maxZoom: 16 });
+  }, [markers, map]);
+  return null;
+}
+
+/** Cursor de "marcar ponto" enquanto o modo de inclusão está ativo. */
+function PlacingCursor({ placing }: { placing: boolean }) {
+  const map = useMap();
+  useEffect(() => {
+    map.getContainer().style.cursor = placing ? "crosshair" : "";
+  }, [placing, map]);
+  return null;
+}
+
+const Pin = memo(function Pin({
   marker,
-  onEdit,
-  onDelete,
+  selected,
+  onSelect,
 }: {
   marker: HerbMarker;
-  onEdit: (m: HerbMarker) => void;
-  onDelete: (m: HerbMarker) => void;
+  selected: boolean;
+  onSelect: (m: HerbMarker) => void;
 }) {
   const icon = useMemo(
-    () => markerIcon(marker),
+    () => pinIcon(marker, selected),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [marker.id, marker.status, marker.catalog?.key, marker.catalog?.hasRisk],
+    [marker.id, marker.status, marker.herb.temperature, marker.herb.name, selected],
   );
-
-  const cat = marker.catalog;
-  const temperature = cat.temperature.join(" / ") || null;
-
   return (
-    <Marker position={[marker.lat, marker.lng]} icon={icon}>
-      <Popup>
-        <div className="map-popup">
-          <header>
-            <h3>{cat.name}</h3>
-            {cat.type || temperature ? (
-              <p>
-                {[cat.type, temperature].filter(Boolean).join(" · ")}
-              </p>
-            ) : null}
-          </header>
-
-          <div className="popup-status-row">
-            <span className={`popup-status-badge ${marker.status}`}>
-              {marker.status === "muita" ? "Muita erva" : "Pouca erva"}
-            </span>
-            {cat.hasRisk ? (
-              <span
-                className="popup-risk"
-                style={{ color: riskColor(cat.hasRisk, cat.riskTags) }}
-              >
-                ⚠ {cat.riskTags.join(", ") || "Risco"}
-              </span>
-            ) : null}
-          </div>
-
-          {cat.hasRisk && cat.riskDesc ? (
-            <p className="popup-warning popup-warning-alto">⚠ {cat.riskDesc}</p>
-          ) : null}
-
-          {marker.addressLabel ? (
-            <p className="popup-address">📍 {marker.addressLabel}</p>
-          ) : null}
-
-          {marker.notes ? <p className="popup-notes">{marker.notes}</p> : null}
-
-          {cat.orixas.length > 0 ? (
-            <>
-              <p className="popup-section-label">Orixás</p>
-              <div className="popup-tags">
-                {cat.orixas.slice(0, 5).map((o) => (
-                  <span key={o}>{o}</span>
-                ))}
-              </div>
-            </>
-          ) : null}
-
-          {cat.usage ? (
-            <>
-              <p className="popup-section-label">Uso</p>
-              <p className="popup-notes">{cat.usage}</p>
-            </>
-          ) : null}
-
-          <div className="popup-actions">
-            <button type="button" onClick={() => onEdit(marker)}>
-              <Pencil size={14} />
-              Editar
-            </button>
-            <button
-              type="button"
-              className="danger"
-              onClick={() => onDelete(marker)}
-            >
-              <Trash2 size={14} />
-              Remover
-            </button>
-          </div>
-        </div>
-      </Popup>
-    </Marker>
+    <Marker
+      position={[marker.lat, marker.lng]}
+      icon={icon}
+      keyboard
+      title={`${marker.herb.name} (${marker.status === "muita" ? "muita" : "pouca"} erva)`}
+      eventHandlers={{ click: () => onSelect(marker) }}
+    />
   );
 });
 
 export default memo(function LeafletMap({
   markers,
+  selectedId,
   pendingPoint,
   userLocation,
   focusPoint,
+  placing,
+  onSelect,
   onMapClick,
   onOutOfBounds,
-  onEdit,
-  onDelete,
 }: Props) {
   return (
     <MapContainer
@@ -228,37 +162,28 @@ export default memo(function LeafletMap({
       style={{ width: "100%", height: "100%" }}
     >
       <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-
       <Rectangle
         bounds={LEAFLET_BOUNDS}
-        pathOptions={{
-          color: "#0a7b64",
-          weight: 2,
-          fillColor: "#2bc29a",
-          fillOpacity: 0.04,
-        }}
+        interactive={false}
+        pathOptions={{ color: "#2f6b3f", weight: 2, fillColor: "#2f6b3f", fillOpacity: 0.03 }}
       />
-
-      <ClickHandler onMapClick={onMapClick} onOutOfBounds={onOutOfBounds} />
+      <ClickHandler onMapClick={onMapClick} onOutOfBounds={onOutOfBounds} placing={placing} />
+      <PlacingCursor placing={placing} />
       <FlyToFocus focusPoint={focusPoint} />
+      <FitToMarkers markers={markers} />
 
-      {markers.map((marker) => (
-        <HerbMarkerPin
-          key={marker.id}
-          marker={marker}
-          onEdit={onEdit}
-          onDelete={onDelete}
-        />
+      {markers.map((m) => (
+        <Pin key={m.id} marker={m} selected={m.id === selectedId} onSelect={onSelect} />
       ))}
 
       {pendingPoint ? (
-        <Marker position={[pendingPoint.lat, pendingPoint.lng]} icon={pendingIcon} />
+        <Marker position={[pendingPoint.lat, pendingPoint.lng]} icon={pendingIcon} interactive={false} />
       ) : null}
       {userLocation ? (
-        <Marker position={[userLocation.lat, userLocation.lng]} icon={userIcon} />
+        <Marker position={[userLocation.lat, userLocation.lng]} icon={userIcon} interactive={false} />
       ) : null}
     </MapContainer>
   );

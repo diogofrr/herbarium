@@ -42,8 +42,23 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const payload = (await response.json()) as GeocodeResult[];
-  const data = payload.map((item) => ({
+  // O Nominatim pode responder 200 com HTML (manutenção) ou um objeto de erro.
+  // Blindamos o parse e a suposição de array para não estourar 500.
+  let payload: unknown;
+  try {
+    payload = await response.json();
+  } catch {
+    return NextResponse.json(
+      { error: "Falha ao consultar endereço." },
+      { status: 502 },
+    );
+  }
+
+  if (!Array.isArray(payload)) {
+    return NextResponse.json({ data: [] });
+  }
+
+  const data = (payload as GeocodeResult[]).map((item) => ({
     label: item.display_name,
     lat: Number(item.lat),
     lng: Number(item.lon),

@@ -1,17 +1,11 @@
-import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-
-const API_URL = process.env.HERBARIUM_API_URL ?? "http://localhost:8080";
-const COOKIE_NAME = "herbarium_session";
-const MAX_AGE = 60 * 60 * 24; // 24h
+import { API_URL } from "@/lib/server/api";
+import { setSessionToken } from "@/lib/server/session";
 
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
   if (!body || typeof body !== "object") {
-    return NextResponse.json(
-      { error: "Corpo da requisição inválido." },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "Corpo da requisição inválido." }, { status: 400 });
   }
 
   try {
@@ -20,37 +14,25 @@ export async function POST(request: NextRequest) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: body.email, password: body.password }),
     });
-    const data = (await res.json()) as Record<string, unknown>;
 
+    if (res.status === 429) {
+      return NextResponse.json(
+        { error: "Muitas tentativas. Aguarde um minuto e tente de novo." },
+        { status: 429 },
+      );
+    }
     if (!res.ok) {
-      const message =
-        typeof data.message === "string"
-          ? data.message
-          : "Credenciais inválidas";
-      return NextResponse.json({ error: message }, { status: res.status });
+      // Resposta uniforme: não revela se o e-mail existe.
+      return NextResponse.json({ error: "Credenciais inválidas" }, { status: 401 });
     }
 
-    const result = data.result as {
+    const data = (await res.json()) as {
       access_token: string;
-      user: { email: string; name: string };
+      user: { id: string; email: string; name: string; role: string };
     };
-
-    const cookieStore = await cookies();
-    cookieStore.set(COOKIE_NAME, result.access_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: MAX_AGE,
-    });
-
-    return NextResponse.json({
-      user: { email: result.user.email, name: result.user.name },
-    });
+    await setSessionToken(data.access_token);
+    return NextResponse.json({ user: data.user });
   } catch {
-    return NextResponse.json(
-      { error: "Erro ao conectar com o servidor" },
-      { status: 503 },
-    );
+    return NextResponse.json({ error: "Erro ao conectar com o servidor" }, { status: 503 });
   }
 }
