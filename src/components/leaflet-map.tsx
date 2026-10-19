@@ -1,7 +1,9 @@
 "use client";
 
-import { memo, useEffect, useMemo, useRef } from "react";
+import { memo, useEffect, useRef } from "react";
 import L from "leaflet";
+import "leaflet.markercluster";
+import "leaflet.markercluster/dist/MarkerCluster.css";
 import {
   MapContainer,
   Marker,
@@ -38,16 +40,31 @@ export const TEMPERATURE_COLOR: Record<Temperature, string> = {
   fria: "#20639b",
 };
 
+/** Folha estilizada (branca) usada dentro dos pinos e dos agrupamentos. */
+const LEAF_SVG =
+  '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M20.5 3.5C11 3.2 4.5 8 4.5 15.2c0 1.5.4 2.8 1 3.9C7 15 10 12.2 14.6 11c-3.7 1.6-6.4 4.4-7.8 8.6 1 .6 2.1.9 3.4.9 6.6 0 10.6-5.6 10.3-17z"/></svg>';
+
 function pinIcon(marker: HerbMarker, selected: boolean) {
   const big = marker.status === "muita";
-  const size = big ? 40 : 32;
+  const size = big ? 46 : 36;
   const color = TEMPERATURE_COLOR[marker.herb.temperature];
-  const initial = marker.herb.name.charAt(0).toUpperCase();
+  // "muita erva" ganha pino maior e uma folha a mais, "pouca" um pino menor.
+  const badge = big ? '<i class="pin-more" aria-hidden="true">+</i>' : "";
   return L.divIcon({
     className: "",
-    html: `<span class="herb-pin${selected ? " is-selected" : ""}" style="width:${size}px;height:${size}px;background:${color};font-size:${big ? 16 : 13}px"><span>${initial}</span></span>`,
+    html: `<span class="herb-pin${selected ? " is-selected" : ""}" style="width:${size}px;height:${size}px;background:${color}"><span class="pin-leaf" style="width:${Math.round(size * 0.52)}px;height:${Math.round(size * 0.52)}px">${LEAF_SVG}</span></span>${badge}`,
     iconSize: [size, size],
     iconAnchor: [size / 2, size],
+  });
+}
+
+function clusterIcon(cluster: L.MarkerCluster) {
+  const n = cluster.getChildCount();
+  const size = n < 10 ? 44 : n < 50 ? 50 : 56;
+  return L.divIcon({
+    className: "",
+    html: `<span class="herb-cluster" style="width:${size}px;height:${size}px"><span class="cluster-leaf">${LEAF_SVG}</span><b>${n}</b></span>`,
+    iconSize: [size, size],
   });
 }
 
@@ -115,30 +132,47 @@ function PlacingCursor({ placing }: { placing: boolean }) {
   return null;
 }
 
-const Pin = memo(function Pin({
-  marker,
-  selected,
+/** Agrupa pinos próximos (aproxime para separar) e desenha cada marcação com a folha. */
+function ClusterLayer({
+  markers,
+  selectedId,
   onSelect,
 }: {
-  marker: HerbMarker;
-  selected: boolean;
+  markers: HerbMarker[];
+  selectedId: string | null;
   onSelect: (m: HerbMarker) => void;
 }) {
-  const icon = useMemo(
-    () => pinIcon(marker, selected),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [marker.id, marker.status, marker.herb.temperature, marker.herb.name, selected],
-  );
-  return (
-    <Marker
-      position={[marker.lat, marker.lng]}
-      icon={icon}
-      keyboard
-      title={`${marker.herb.name} (${marker.status === "muita" ? "muita" : "pouca"} erva)`}
-      eventHandlers={{ click: () => onSelect(marker) }}
-    />
-  );
-});
+  const map = useMap();
+  const onSelectRef = useRef(onSelect);
+  useEffect(() => {
+    onSelectRef.current = onSelect;
+  }, [onSelect]);
+
+  useEffect(() => {
+    const group = L.markerClusterGroup({
+      iconCreateFunction: clusterIcon,
+      maxClusterRadius: 46,
+      showCoverageOnHover: false,
+      spiderfyOnMaxZoom: true,
+      disableClusteringAtZoom: 18,
+    });
+    for (const m of markers) {
+      const marker = L.marker([m.lat, m.lng], {
+        icon: pinIcon(m, m.id === selectedId),
+        keyboard: true,
+        title: `${m.herb.name} (${m.status === "muita" ? "muita" : "pouca"} erva)`,
+      });
+      marker.on("click", () => onSelectRef.current(m));
+      group.addLayer(marker);
+    }
+    map.addLayer(group);
+    return () => {
+      map.removeLayer(group);
+    };
+  }, [map, markers, selectedId]);
+
+  return null;
+}
 
 export default memo(function LeafletMap({
   markers,
@@ -175,9 +209,7 @@ export default memo(function LeafletMap({
       <FlyToFocus focusPoint={focusPoint} />
       <FitToMarkers markers={markers} />
 
-      {markers.map((m) => (
-        <Pin key={m.id} marker={m} selected={m.id === selectedId} onSelect={onSelect} />
-      ))}
+      <ClusterLayer markers={markers} selectedId={selectedId} onSelect={onSelect} />
 
       {pendingPoint ? (
         <Marker position={[pendingPoint.lat, pendingPoint.lng]} icon={pendingIcon} interactive={false} />

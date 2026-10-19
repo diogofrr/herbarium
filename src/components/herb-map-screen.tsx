@@ -260,6 +260,7 @@ export function HerbMapScreen() {
           <span><i className="legend-dot" style={{ background: "#b93a2a" }} />Quente</span>
           <span><i className="legend-dot" style={{ background: "#c98a12" }} />Morna</span>
           <span><i className="legend-dot" style={{ background: "#20639b" }} />Fria</span>
+          <span className="legend-size">Pino grande com + = muita erva</span>
         </div>
       ) : null}
 

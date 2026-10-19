@@ -1107,7 +1107,7 @@ button.chip.is-on.chip-temp-fria {
   border: 1px solid #bcd7bf;
 }
 
-/* Pino do mapa (Leaflet divIcon) */
+/* Pino do mapa (Leaflet divIcon): gota colorida pela temperatura, com uma folha */
 .herb-pin {
   display: grid;
   place-items: center;
@@ -1116,15 +1116,77 @@ button.chip.is-on.chip-temp-fria {
   border: 3px solid #fff;
   box-shadow: 0 3px 10px rgb(0 0 0 / 38%);
   color: #fff;
-  font-weight: 800;
+  transition: transform 140ms ease;
 }
 
-.herb-pin > span {
+.herb-pin .pin-leaf {
+  display: block;
   transform: rotate(45deg);
+}
+
+.herb-pin .pin-leaf svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .herb-pin.is-selected {
   outline: 4px solid rgb(47 107 63 / 45%);
+  transform: rotate(-45deg) scale(1.12);
+}
+
+.pin-more {
+  position: absolute;
+  right: -6px;
+  top: -4px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--primary-strong);
+  font-style: normal;
+  font-weight: 800;
+  font-size: 13px;
+  line-height: 1;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 35%);
+}
+
+.herb-cluster {
+  position: relative;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--primary-strong);
+  border: 3px solid #fff;
+  box-shadow: 0 3px 12px rgb(0 0 0 / 40%);
+  color: #fff;
+}
+
+.herb-cluster b {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.herb-cluster .cluster-leaf {
+  position: absolute;
+  left: 3px;
+  top: 2px;
+  width: 15px;
+  height: 15px;
+  opacity: 0.85;
+}
+
+.herb-cluster .cluster-leaf svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.leaflet-cluster-anim .leaflet-marker-icon,
+.leaflet-cluster-anim .leaflet-marker-shadow {
+  transition: transform 0.25s ease-out, opacity 0.25s ease-in;
 }
 
 /* Painel do marcador: folha inferior no celular, cartão lateral no desktop */
@@ -1667,4 +1729,16 @@ button.chip.is-on.chip-temp-fria {
   gap: 12px;
   margin: 0;
   padding-left: 22px;
+}
+
+.legend-size {
+  display: none;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+@media (min-width: 900px) {
+  .legend-size {
+    display: inline;
+  }
 }
