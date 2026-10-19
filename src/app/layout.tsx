@@ -3,6 +3,7 @@ import { Fraunces, Source_Sans_3 } from "next/font/google";
 import "./globals.css";
 import "./leaflet.css";
 import { AppShell } from "@/components/app-shell";
+import { PwaRegister } from "@/components/pwa";
 import { Providers } from "@/components/providers";
 
 const displayFont = Fraunces({
@@ -24,6 +25,9 @@ export const metadata: Metadata = {
   },
   description:
     "Mapa colaborativo de ervas em Uberlândia e guia de ervas da Umbanda: orixás, povos, temperatura e função de cada erva.",
+  applicationName: "Herbarium",
+  appleWebApp: { capable: true, title: "Herbarium", statusBarStyle: "black-translucent" },
+  icons: { apple: "/apple-touch-icon.png" },
 };
 
 export const viewport: Viewport = {
@@ -38,6 +42,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body className={`${displayFont.variable} ${bodyFont.variable}`}>
+        <PwaRegister />
         <Providers>
           <AppShell>{children}</AppShell>
         </Providers>

@@ -1622,3 +1622,49 @@ button.chip.is-on.chip-temp-fria {
   display: block;
   color: var(--ink-soft);
 }
+
+/* Mapa sem cabeçalho no celular (a barra inferior já navega) */
+@media (max-width: 767px) {
+  .app-nav.on-map {
+    display: none;
+  }
+  .map-top {
+    top: calc(10px + env(safe-area-inset-top));
+  }
+}
+
+/* Aviso de "sem marcações": nunca cobre os botões flutuantes */
+.map-empty {
+  position: absolute;
+  z-index: 480;
+  left: 10px;
+  right: 84px;
+  bottom: 62px;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  font-size: 0.9rem;
+  pointer-events: none;
+}
+
+.map-empty a {
+  pointer-events: auto;
+}
+
+@media (min-width: 900px) {
+  .map-empty {
+    left: 14px;
+    right: auto;
+    width: 360px;
+    bottom: 14px;
+  }
+}
+
+.install-steps {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding-left: 22px;
+}

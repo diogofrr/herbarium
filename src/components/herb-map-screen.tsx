@@ -297,7 +297,7 @@ export function HerbMapScreen() {
           onDelete={setConfirmDelete}
         />
       ) : markers.length === 0 && !markersQuery.isLoading ? (
-        <div className="sheet" aria-live="polite">
+        <div className="map-empty" aria-live="polite">
           <p style={{ margin: 0 }}>
             Ainda não há marcações. Toque em <strong>+</strong> para marcar a primeira erva, ou
             explore o <Link href="/ervas">guia de ervas</Link>.

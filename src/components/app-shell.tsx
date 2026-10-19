@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BookOpen, Camera, Leaf, LogIn, LogOut, Map as MapIcon, User } from "lucide-react";
 import { AuthModal } from "@/components/auth-modal";
+import { InstallButton } from "@/components/pwa";
 import { useAuth } from "@/context/auth-context";
 
 const LINKS = [
@@ -24,7 +25,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="shell">
-      <header className="app-nav">
+      <header className={`app-nav${pathname === "/" ? " on-map" : ""}`}>
         <Link href="/" className="brand">
           <Leaf size={22} aria-hidden />
           Herbarium
@@ -42,6 +43,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           ))}
         </nav>
         <span className="nav-spacer" />
+        <InstallButton />
         {!isLoading &&
           (isAuthenticated ? (
             <div className="nav-user">

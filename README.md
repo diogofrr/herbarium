@@ -39,3 +39,9 @@ crédito e licença aparecem na página de cada erva.
 | `HERBARIUM_API_URL` | `http://localhost:8081` | URL da herbarium-api |
 | `JWT_SECRET` | (obrigatória) | Mesmo segredo da API; usado para validar a assinatura da sessão |
 | `PLANTNET_API_KEY` | (opcional) | Chave do Pl@ntNet; só no servidor |
+
+## App instalável (PWA)
+
+O site é um PWA: no Android/Chrome aparece o botão **Instalar app** no cabeçalho; no iPhone o botão mostra o caminho
+(Compartilhar > Adicionar à Tela de Início). O service worker (`public/sw.js`, ativo só em produção) guarda páginas,
+fotos e o catálogo já abertos para uso offline; mapa, login e identificação exigem internet.
