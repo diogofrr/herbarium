@@ -33,6 +33,7 @@ type LinkChipsProps = {
 export function LinkChips({ items, kind, limit, linked = false }: LinkChipsProps) {
   const shown = limit ? items.slice(0, limit) : items;
   const hidden = items.length - shown.length;
+  if (items.length === 0) return null;
   const cls = kind === "orixa" ? "chip chip-orixa" : "chip chip-povo";
   return (
     <div className="chip-row">

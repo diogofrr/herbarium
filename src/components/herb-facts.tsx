@@ -20,7 +20,11 @@ export function HerbFacts({
       <div className="fact">
         <dt>Orixás</dt>
         <dd>
-          <LinkChips items={herb.orixas} kind="orixa" linked={linked} />
+          {herb.orixas.length > 0 ? (
+            <LinkChips items={herb.orixas} kind="orixa" linked={linked} />
+          ) : (
+            <span className="fact-note">A apostila da Casa não informa o orixá desta erva.</span>
+          )}
         </dd>
       </div>
       <div className="fact">
