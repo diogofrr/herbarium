@@ -1365,6 +1365,7 @@ button.chip.is-on.chip-temp-fria {
   font-size: 0.92rem;
 }
 
+.auth-field select,
 .auth-field input {
   min-height: 46px;
   padding: 10px 14px;

@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     const res = await fetch(`${API_URL}/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: body.name, email: body.email, password: body.password }),
+      body: JSON.stringify({ name: body.name, orixa: body.orixa, email: body.email, password: body.password }),
     });
     const data = (await res.json().catch(() => null)) as unknown;
 

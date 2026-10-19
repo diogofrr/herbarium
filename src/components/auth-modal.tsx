@@ -3,6 +3,7 @@
 import { memo, useState } from "react";
 import { Loader2, LogIn, UserPlus, Leaf, X } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
+import { useTaxonomy } from "@/hooks/use-catalog";
 import { Dialog, DialogClose, DialogContent } from "@/components/ui/dialog";
 
 type Props = {
@@ -22,7 +23,9 @@ export const AuthModal = memo(function AuthModal({
 }: Props) {
   const { login, register } = useAuth();
   const [mode, setMode] = useState<Mode>("login");
+  const { data: taxonomy } = useTaxonomy();
   const [name, setName] = useState("");
+  const [orixa, setOrixa] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -30,6 +33,7 @@ export const AuthModal = memo(function AuthModal({
 
   function reset() {
     setName("");
+    setOrixa("");
     setEmail("");
     setPassword("");
     setError(null);
@@ -52,9 +56,15 @@ export const AuthModal = memo(function AuthModal({
       setError("Senha deve ter ao menos 8 caracteres.");
       return;
     }
-    if (mode === "register" && name.trim().length < 2) {
-      setError("Informe seu nome.");
-      return;
+    if (mode === "register") {
+      if (!/^[\p{L}][\p{L}'-]+$/u.test(name.trim())) {
+        setError("Informe só o seu primeiro nome.");
+        return;
+      }
+      if (!orixa) {
+        setError("Escolha o seu santo de cabeça.");
+        return;
+      }
     }
 
     setLoading(true);
@@ -62,7 +72,7 @@ export const AuthModal = memo(function AuthModal({
       if (mode === "login") {
         await login(email, password);
       } else {
-        await register(name.trim(), email, password);
+        await register(name.trim(), orixa, email, password);
       }
       reset();
       onClose();
@@ -115,18 +125,37 @@ export const AuthModal = memo(function AuthModal({
 
         <form onSubmit={handleSubmit} className="auth-form" noValidate>
           {mode === "register" && (
-            <label className="auth-field">
-              <span>Nome</span>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Seu nome"
-                autoFocus
-                autoComplete="name"
-                disabled={loading}
-              />
-            </label>
+            <>
+              <label className="auth-field">
+                <span>Primeiro nome</span>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Ex.: Diogo"
+                  maxLength={30}
+                  autoFocus
+                  autoComplete="given-name"
+                  disabled={loading}
+                />
+              </label>
+              <label className="auth-field">
+                <span>Santo de cabeça</span>
+                <select value={orixa} onChange={(e) => setOrixa(e.target.value)} disabled={loading}>
+                  <option value="">Escolha o orixá</option>
+                  {taxonomy?.orixas.map((o) => (
+                    <option key={o.slug} value={o.slug}>
+                      {o.name}
+                    </option>
+                  ))}
+                </select>
+                {name.trim() && orixa ? (
+                  <small className="fact-note">
+                    Você aparecerá como {name.trim()} de {taxonomy?.orixas.find((o) => o.slug === orixa)?.name}.
+                  </small>
+                ) : null}
+              </label>
+            </>
           )}
 
           <label className="auth-field">

@@ -30,13 +30,14 @@ export async function loginRequest(
 
 export async function registerRequest(
   name: string,
+  orixa: string,
   email: string,
   password: string,
 ): Promise<AuthUser> {
   const res = await fetch("/api/auth/register", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, email, password }),
+    body: JSON.stringify({ name, orixa, email, password }),
   });
   if (!res.ok) throw new Error(await parseError(res));
   const data = (await res.json()) as { user: AuthUser };
