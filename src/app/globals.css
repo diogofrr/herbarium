@@ -1742,3 +1742,42 @@ button.chip.is-on.chip-temp-fria {
     display: inline;
   }
 }
+
+/* Quantidade editável no painel do marcador */
+.qty {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.qty-label {
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.qty .segmented {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.qty-opt {
+  min-height: 44px;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--line);
+  background: #fff;
+  font-weight: 650;
+}
+
+.qty-opt.is-on {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+}
+
+.qty-opt:disabled {
+  opacity: 0.6;
+}

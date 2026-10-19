@@ -5,7 +5,7 @@ import { BookOpen, Navigation, Pencil, Trash2, X } from "lucide-react";
 import { HerbThumb } from "@/components/herb-card";
 import { HerbFacts } from "@/components/herb-facts";
 import type { AuthUser } from "@/lib/api/auth";
-import type { HerbMarker } from "@/types/herb";
+import type { HerbMarker, MarkerStatus } from "@/types/herb";
 
 type Props = {
   marker: HerbMarker;
@@ -13,6 +13,8 @@ type Props = {
   onClose: () => void;
   onEdit: (marker: HerbMarker) => void;
   onDelete: (marker: HerbMarker) => void;
+  onChangeStatus: (marker: HerbMarker, status: MarkerStatus) => void;
+  busy?: boolean;
 };
 
 export function canManageMarker(user: AuthUser | null, marker: HerbMarker): boolean {
@@ -22,7 +24,7 @@ export function canManageMarker(user: AuthUser | null, marker: HerbMarker): bool
 }
 
 /** Painel da marcação selecionada: erva, orixás, povos, temperatura e função. */
-export function MarkerSheet({ marker, user, onClose, onEdit, onDelete }: Props) {
+export function MarkerSheet({ marker, user, onClose, onEdit, onDelete, onChangeStatus, busy = false }: Props) {
   const { herb } = marker;
   const manage = canManageMarker(user, marker);
 
@@ -36,14 +38,36 @@ export function MarkerSheet({ marker, user, onClose, onEdit, onDelete }: Props) 
         <div>
           <h2>{herb.name}</h2>
           {herb.scientificName ? <p className="sci">{herb.scientificName}</p> : null}
-          <p className="sheet-meta" style={{ margin: "4px 0 0" }}>
-            {marker.status === "muita" ? "Muita erva neste ponto" : "Pouca erva neste ponto"}
-          </p>
+          {user ? null : (
+            <p className="sheet-meta" style={{ margin: "4px 0 0" }}>
+              {marker.status === "muita" ? "Muita erva neste ponto" : "Pouca erva neste ponto"}
+            </p>
+          )}
         </div>
         <button type="button" className="modal-close" aria-label="Fechar painel" onClick={onClose}>
           <X size={18} />
         </button>
       </div>
+
+      {user ? (
+        <div className="qty" role="group" aria-label="Quantidade de erva neste ponto">
+          <span className="qty-label">Quantidade neste ponto</span>
+          <div className="segmented">
+            {(["muita", "pouca"] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                className={`qty-opt${marker.status === v ? " is-on" : ""}`}
+                aria-pressed={marker.status === v}
+                disabled={busy}
+                onClick={() => marker.status !== v && onChangeStatus(marker, v)}
+              >
+                {v === "muita" ? "Muita erva" : "Pouca erva"}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       <HerbFacts herb={herb} compact />
 

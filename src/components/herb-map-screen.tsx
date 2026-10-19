@@ -15,6 +15,7 @@ import { useAuth } from "@/context/auth-context";
 import {
   useDebouncedValue,
   useDeleteMarker,
+  useUpdateMarker,
   useGeocode,
   useGeolocation,
   useHerbCatalog,
@@ -46,6 +47,7 @@ export function HerbMapScreen() {
   const catalogQuery = useHerbCatalog();
   const taxonomyQuery = useTaxonomy();
   const deleteMarker = useDeleteMarker();
+  const updateMarker = useUpdateMarker();
 
   const [filters, setFilters] = useState<HerbFilters>(EMPTY_FILTERS);
   const [onlyHerb, setOnlyHerb] = useState<string | null>(ervaParam);
@@ -142,7 +144,7 @@ export function HerbMapScreen() {
         onSelect={(m) => {
           setSelectedId(m.id);
           setPlacing(false);
-          setFocusPoint({ lat: m.lat, lng: m.lng, zoom: 16, nonce: Date.now() });
+          setFocusPoint({ lat: m.lat, lng: m.lng, nonce: Date.now() });
         }}
         onMapClick={(lat, lng) => {
           setPendingPoint({ lat, lng });
@@ -296,6 +298,16 @@ export function HerbMapScreen() {
             setFormOpen(true);
           }}
           onDelete={setConfirmDelete}
+          busy={updateMarker.isPending}
+          onChangeStatus={(m, status) =>
+            updateMarker.mutate(
+              { id: m.id, body: { status } },
+              {
+                onSuccess: () => setToast({ kind: "ok", text: "Quantidade atualizada." }),
+                onError: (err) => showError(err instanceof Error ? err.message : "Não foi possível atualizar."),
+              },
+            )
+          }
         />
       ) : markers.length === 0 && !markersQuery.isLoading ? (
         <div className="map-empty" aria-live="polite">

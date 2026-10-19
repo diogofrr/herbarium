@@ -105,7 +105,16 @@ function FlyToFocus({ focusPoint }: { focusPoint: FocusPoint | null }) {
   const map = useMap();
   useEffect(() => {
     if (!focusPoint) return;
-    map.flyTo([focusPoint.lat, focusPoint.lng], focusPoint.zoom ?? 16, { duration: 0.8 });
+    if (focusPoint.zoom === undefined) {
+      // Seleção de pino: mantém o zoom e o agrupamento como estão. No celular o painel
+      // ocupa a metade de baixo, então sobe o pino para a parte livre.
+      const target = map.latLngToContainerPoint([focusPoint.lat, focusPoint.lng]);
+      const size = map.getSize();
+      const wantY = size.x < 900 ? size.y * 0.3 : size.y * 0.5;
+      map.panBy([target.x - size.x / 2, target.y - wantY], { animate: true, duration: 0.4 });
+      return;
+    }
+    map.flyTo([focusPoint.lat, focusPoint.lng], focusPoint.zoom, { duration: 0.8 });
   }, [focusPoint, map]);
   return null;
 }
@@ -144,10 +153,15 @@ function ClusterLayer({
 }) {
   const map = useMap();
   const onSelectRef = useRef(onSelect);
+  const selectedRef = useRef(selectedId);
+  const leaflets = useRef(new Map<string, { marker: L.Marker; data: HerbMarker }>());
+
   useEffect(() => {
     onSelectRef.current = onSelect;
   }, [onSelect]);
 
+  // Reconstrói só quando os pontos mudam (selecionar um pino NÃO desmonta os grupos,
+  // senão o mapa recolhe os agrupamentos e perde o que o usuário abriu).
   useEffect(() => {
     const group = L.markerClusterGroup({
       iconCreateFunction: clusterIcon,
@@ -156,20 +170,31 @@ function ClusterLayer({
       spiderfyOnMaxZoom: true,
       disableClusteringAtZoom: 18,
     });
+    const registry = new Map<string, { marker: L.Marker; data: HerbMarker }>();
     for (const m of markers) {
       const marker = L.marker([m.lat, m.lng], {
-        icon: pinIcon(m, m.id === selectedId),
+        icon: pinIcon(m, m.id === selectedRef.current),
         keyboard: true,
         title: `${m.herb.name} (${m.status === "muita" ? "muita" : "pouca"} erva)`,
       });
       marker.on("click", () => onSelectRef.current(m));
       group.addLayer(marker);
+      registry.set(m.id, { marker, data: m });
     }
+    leaflets.current = registry;
     map.addLayer(group);
     return () => {
       map.removeLayer(group);
     };
-  }, [map, markers, selectedId]);
+  }, [map, markers]);
+
+  // Selecionar apenas troca o ícone do pino (destaque), sem refazer o agrupamento.
+  useEffect(() => {
+    selectedRef.current = selectedId;
+    for (const [id, { marker, data }] of leaflets.current) {
+      marker.setIcon(pinIcon(data, id === selectedId));
+    }
+  }, [selectedId, markers]);
 
   return null;
 }
