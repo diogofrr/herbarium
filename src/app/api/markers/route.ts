@@ -5,9 +5,12 @@ import { isWithinUberlandia } from "@/lib/uberlandia";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const withGone = request.nextUrl.searchParams.get("incluirEsgotados") === "true";
   try {
-    const res = await fetch(`${API_URL}/markers`, { cache: "no-store" });
+    const res = await fetch(`${API_URL}/markers${withGone ? "?incluirEsgotados=true" : ""}`, {
+      cache: "no-store",
+    });
     if (!res.ok) {
       return NextResponse.json(
         { error: "Não foi possível carregar os pontos." },

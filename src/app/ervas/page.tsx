@@ -1,5 +1,8 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import Link from "next/link";
+import { BookmarkCheck } from "lucide-react";
+import { OfflineButton } from "@/components/offline-button";
 import { HerbIndex } from "@/components/herb-index";
 import { getHerbs, getTaxonomy } from "@/lib/server/api";
 
@@ -21,10 +24,16 @@ export default async function ErvasPage() {
         Orixás, povos de atuação, temperatura e função de cada erva, com fotos e fontes.
       </p>
       <p className="disclaimer">
-        Cada casa tem a sua doutrina. Aqui valem, em primeiro lugar, a apostila da Casa de
-        Umbanda Rosa Maria e, depois, o livro Rituais com Ervas. Converse com o dirigente da sua
-        casa antes de usar qualquer erva. Não é orientação médica.
+        Cada casa tem a sua doutrina. Aqui valem, em primeiro lugar, a apostila de ervas e, depois, o livro Rituais com Ervas. Converse com o dirigente da sua casa antes de usar qualquer erva. Não é orientação médica.
       </p>
+
+      <div className="guide-actions">
+        <Link href="/minhas-ervas" className="btn">
+          <BookmarkCheck size={16} aria-hidden />
+          Minhas ervas
+        </Link>
+        <OfflineButton />
+      </div>
 
       {herbs ? (
         <Suspense fallback={<p className="result-line">Carregando o guia…</p>}>

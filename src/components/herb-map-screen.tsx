@@ -29,7 +29,7 @@ import {
   fold,
   herbMatches,
 } from "@/lib/herb-utils";
-import type { HerbFilters, HerbMarker, Temperature } from "@/types/herb";
+import type { HerbFilters, HerbMarker, MarkerStatus, Temperature } from "@/types/herb";
 
 const LeafletMap = dynamic(() => import("@/components/leaflet-map"), {
   ssr: false,
@@ -43,7 +43,8 @@ export function HerbMapScreen() {
   const ervaParam = searchParams.get("erva");
   const { user, isAuthenticated } = useAuth();
 
-  const markersQuery = useMarkers();
+  const [showGone, setShowGone] = useState(false);
+  const markersQuery = useMarkers(showGone);
   const catalogQuery = useHerbCatalog();
   const taxonomyQuery = useTaxonomy();
   const deleteMarker = useDeleteMarker();
@@ -51,6 +52,7 @@ export function HerbMapScreen() {
 
   const [filters, setFilters] = useState<HerbFilters>(EMPTY_FILTERS);
   const [onlyHerb, setOnlyHerb] = useState<string | null>(ervaParam);
+  const [statusFilter, setStatusFilter] = useState<MarkerStatus | null>(null);
   const [text, setText] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -79,10 +81,22 @@ export function HerbMapScreen() {
   const visible = useMemo(
     () =>
       markers.filter(
-        (m) => (!onlyHerb || m.herbSlug === onlyHerb) && herbMatches(m.herb, filters),
+        (m) =>
+          (!onlyHerb || m.herbSlug === onlyHerb) &&
+          (!statusFilter || m.status === statusFilter) &&
+          herbMatches(m.herb, filters),
       ),
-    [markers, filters, onlyHerb],
+    [markers, filters, onlyHerb, statusFilter],
   );
+  const herbOptions = useMemo(() => {
+    const counts = new Map<string, { slug: string; name: string; count: number }>();
+    for (const m of markers) {
+      const entry = counts.get(m.herbSlug) ?? { slug: m.herbSlug, name: m.herb.name, count: 0 };
+      entry.count += 1;
+      counts.set(m.herbSlug, entry);
+    }
+    return [...counts.values()].sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+  }, [markers]);
   const selected = useMemo(
     () => markers.find((m) => m.id === selectedId) ?? null,
     [markers, selectedId],
@@ -102,7 +116,7 @@ export function HerbMapScreen() {
     searchFocused && text.trim().length >= 2 && (herbSuggestions.length > 0 || addressSuggestions.length > 0);
 
   const focusHerbName = onlyHerb ? herbs.find((h) => h.slug === onlyHerb)?.name : null;
-  const active = countActiveFilters(filters);
+  const active = countActiveFilters(filters) + (statusFilter ? 1 : 0) + (onlyHerb ? 1 : 0);
 
   const startPlacing = () => {
     if (!isAuthenticated) {
@@ -235,6 +249,22 @@ export function HerbMapScreen() {
               <span className="visually-hidden">mostrar todas as ervas</span>
             </button>
           ) : null}
+          <button
+            type="button"
+            className={`chip${showGone ? " is-on" : ""}`}
+            aria-pressed={showGone}
+            onClick={() => setShowGone((v) => !v)}
+          >
+            Esgotados
+          </button>
+          <button
+            type="button"
+            className={`chip${statusFilter === "muita" ? " is-on" : ""}`}
+            aria-pressed={statusFilter === "muita"}
+            onClick={() => setStatusFilter((s) => (s === "muita" ? null : "muita"))}
+          >
+            Tem muita
+          </button>
           {TEMPS.map((t) => (
             <button
               key={t}
@@ -339,6 +369,13 @@ export function HerbMapScreen() {
         taxonomy={taxonomyQuery.data}
         resultCount={visible.length}
         resultNoun="pontos"
+        extras={{
+          status: statusFilter,
+          onStatus: setStatusFilter,
+          herbOptions,
+          onlyHerb,
+          onOnlyHerb: setOnlyHerb,
+        }}
       />
 
       <AlertDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)}>

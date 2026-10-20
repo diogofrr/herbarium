@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import { FilterSheet } from "@/components/filter-sheet";
+import { INTENTS, intentById, intentScore, matchIntents } from "@/lib/intents";
 import { HerbCard } from "@/components/herb-card";
 import {
   EMPTY_FILTERS,
@@ -33,19 +34,37 @@ export function HerbIndex({
   // O campo de busca mantém estado local para a digitação não depender do roteador.
   const [text, setText] = useState(filters.q);
 
-  const apply = useCallback(
-    (next: HerbFilters) => {
+  const intent = intentById(searchParams.get("intencao"));
+
+  const go = useCallback(
+    (next: HerbFilters, intentId: string | null) => {
       setLimit(PAGE_SIZE);
-      router.replace(`${pathname}${filtersToSearch(next)}`, { scroll: false });
+      const params = new URLSearchParams(filtersToSearch(next));
+      if (intentId) params.set("intencao", intentId);
+      const qs = params.toString();
+      router.replace(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false });
     },
     [pathname, router],
   );
+  const apply = useCallback((next: HerbFilters) => go(next, intent?.id ?? null), [go, intent]);
 
-  const matches = useMemo(() => herbs.filter((h) => herbMatches(h, filters)), [herbs, filters]);
+  const suggested = useMemo(() => (intent ? [] : matchIntents(text)), [intent, text]);
+
+  const matches = useMemo(() => {
+    const found = herbs.filter((h) => herbMatches(h, filters));
+    if (!intent) return found;
+    return found
+      .map((h) => ({ h, score: intentScore(h, intent) }))
+      .filter((x) => x.score > 0)
+      .sort((a, b) => b.score - a.score || a.h.name.localeCompare(b.h.name, "pt-BR"))
+      .map((x) => x.h);
+  }, [herbs, filters, intent]);
   const visible = matches.slice(0, limit);
   const active = countActiveFilters(filters);
 
   const activeChips: { label: string; clear: () => void }[] = [];
+  if (intent)
+    activeChips.push({ label: `Preciso de: ${intent.label}`, clear: () => go(filters, null) });
   if (filters.temperature)
     activeChips.push({
       label: filters.temperature[0].toUpperCase() + filters.temperature.slice(1),
@@ -100,6 +119,38 @@ export function HerbIndex({
           </button>
         </div>
 
+        {suggested.length > 0 ? (
+          <div className="chip-row" aria-label="Sugestões de necessidade">
+            <span className="pv-small">Ervas para:</span>
+            {suggested.map((i) => (
+              <button
+                key={i.id}
+                type="button"
+                className="chip chip-func"
+                onClick={() => {
+                  setText("");
+                  go({ ...filters, q: "" }, i.id);
+                }}
+              >
+                {i.label}
+              </button>
+            ))}
+          </div>
+        ) : null}
+
+        {!intent ? (
+          <div className="intent-row">
+            <span className="intent-label">Preciso de</span>
+            <div className="chip-row is-scroll" role="group" aria-label="Preciso de">
+              {INTENTS.map((i) => (
+                <button key={i.id} type="button" className="chip" onClick={() => go(filters, i.id)}>
+                  {i.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
         {activeChips.length > 0 ? (
           <div className="chip-row">
             {activeChips.map((c) => (
@@ -129,7 +180,7 @@ export function HerbIndex({
       ) : (
         <div className="empty">
           <p>Nenhuma erva encontrada com esses filtros.</p>
-          <button type="button" className="btn" onClick={() => { setText(""); apply(EMPTY_FILTERS); }}>
+          <button type="button" className="btn" onClick={() => { setText(""); go(EMPTY_FILTERS, null); }}>
             Limpar busca e filtros
           </button>
         </div>

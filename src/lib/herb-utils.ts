@@ -132,3 +132,23 @@ export const FUNCTION_LABELS: Record<string, string> = {
 export function labelOfFunction(slug: string): string {
   return FUNCTION_LABELS[slug] ?? slug.replace(/-/g, " ");
 }
+
+const STALE_DAYS = 60;
+const DAY_MS = 86_400_000;
+
+/** Ponto que ninguém confirma há mais de 60 dias: a erva pode não estar mais lá. */
+export function isStaleMarker(lastConfirmedAt: string, now = Date.now()): boolean {
+  return now - new Date(lastConfirmedAt).getTime() > STALE_DAYS * DAY_MS;
+}
+
+/** "hoje", "há 3 dias", "há 2 meses". */
+export function timeAgo(iso: string, now = Date.now()): string {
+  const days = Math.floor((now - new Date(iso).getTime()) / DAY_MS);
+  if (days <= 0) return "hoje";
+  if (days === 1) return "ontem";
+  if (days < 30) return `há ${days} dias`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return months === 1 ? "há 1 mês" : `há ${months} meses`;
+  const years = Math.floor(months / 12);
+  return years === 1 ? "há 1 ano" : `há ${years} anos`;
+}

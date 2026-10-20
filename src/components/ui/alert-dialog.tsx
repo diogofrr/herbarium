@@ -1,6 +1,7 @@
 "use client";
 
 import * as Adlg from "@radix-ui/react-alert-dialog";
+import { CircleHelp, TriangleAlert } from "lucide-react";
 
 export const AlertDialog = Adlg.Root;
 
@@ -27,25 +28,26 @@ export function AlertDialogContent({
     <Adlg.Portal>
       <Adlg.Overlay className="dialog-overlay" />
       <Adlg.Content className="dialog-content confirm-card">
-        <div className="modal-header">
-          <Adlg.Title className="modal-title">{title}</Adlg.Title>
-        </div>
+        <span className={`confirm-icon${danger ? " is-danger" : ""}`} aria-hidden>
+          {danger ? <TriangleAlert size={26} /> : <CircleHelp size={26} />}
+        </span>
+        <Adlg.Title className="confirm-title">{title}</Adlg.Title>
         <Adlg.Description className="confirm-text">{description}</Adlg.Description>
-        <div className="modal-actions">
+        <div className="confirm-actions">
+          <Adlg.Cancel asChild>
+            <button type="button" className="btn" onClick={onCancel}>
+              {cancelLabel}
+            </button>
+          </Adlg.Cancel>
           <Adlg.Action asChild>
             <button
               type="button"
-              className={danger ? "danger" : "primary"}
+              className={`btn ${danger ? "btn-danger" : "btn-primary"}`}
               onClick={onConfirm}
             >
               {confirmLabel}
             </button>
           </Adlg.Action>
-          <Adlg.Cancel asChild>
-            <button type="button" onClick={onCancel}>
-              {cancelLabel}
-            </button>
-          </Adlg.Cancel>
         </div>
       </Adlg.Content>
     </Adlg.Portal>

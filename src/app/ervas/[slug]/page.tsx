@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, MapPin, TriangleAlert } from "lucide-react";
+import { FavoriteButton, ListButton } from "@/components/herb-actions";
 import { HerbCard } from "@/components/herb-card";
 import { HerbFacts } from "@/components/herb-facts";
 import { RichText } from "@/components/rich-text";
@@ -100,10 +101,14 @@ export default async function HerbPage({ params }: Props) {
             {herb.mainUse}
           </p>
           <HerbFacts herb={herb} linked />
-          <Link href={`/?erva=${herb.slug}`} className="btn btn-primary" style={{ justifySelf: "start" }}>
-            <MapPin size={18} aria-hidden />
-            Ver no mapa
-          </Link>
+          <div className="hero-actions">
+            <Link href={`/?erva=${herb.slug}`} className="btn btn-primary">
+              <MapPin size={18} aria-hidden />
+              Ver no mapa
+            </Link>
+            <FavoriteButton slug={herb.slug} name={herb.name} className="btn btn-icon" />
+            <ListButton slug={herb.slug} name={herb.name} className="btn" withLabel />
+          </div>
         </div>
       </header>
 
@@ -182,6 +187,12 @@ export default async function HerbPage({ params }: Props) {
             </section>
           ) : null}
 
+          <p>
+            <Link href="/preparo" className="chip">
+              Como preparar banhos e defumações
+            </Link>
+          </p>
+
           <section id="fontes" className="wiki-section">
             <h2>Fontes consultadas</h2>
             <ul className="sources">
@@ -191,8 +202,7 @@ export default async function HerbPage({ params }: Props) {
             </ul>
             <p className="disclaimer">
               A Umbanda é oral e cada casa tem a sua doutrina. Em caso de diferença entre as
-              fontes, vale a apostila da Casa de Umbanda Rosa Maria e, depois, o livro Rituais com
-              Ervas. Este conteúdo não substitui a orientação do dirigente da sua casa nem a de um
+              fontes, vale a apostila de ervas e, depois, o livro Rituais com Ervas. Este conteúdo não substitui a orientação do dirigente da sua casa nem a de um
               profissional de saúde.
             </p>
           </section>

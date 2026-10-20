@@ -27,7 +27,10 @@ export const metadata: Metadata = {
     "Mapa colaborativo de ervas em Uberlândia e guia de ervas da Umbanda: orixás, povos, temperatura e função de cada erva.",
   applicationName: "Herbarium",
   appleWebApp: { capable: true, title: "Herbarium", statusBarStyle: "black-translucent" },
-  icons: { apple: "/apple-touch-icon.png" },
+  icons: {
+    icon: [{ url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export const viewport: Viewport = {

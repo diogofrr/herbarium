@@ -23,6 +23,10 @@ type AuthContextValue = {
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, orixa: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  /** Abre/fecha o diálogo de entrar (usado por botões que exigem conta). */
+  loginOpen: boolean;
+  openLogin: () => void;
+  closeLogin: () => void;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -30,6 +34,9 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loginOpen, setLoginOpen] = useState(false);
+  const openLogin = useCallback(() => setLoginOpen(true), []);
+  const closeLogin = useCallback(() => setLoginOpen(false), []);
 
   useEffect(() => {
     sessionRequest()
@@ -64,6 +71,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         register,
         logout,
+        loginOpen,
+        openLogin,
+        closeLogin,
       }}
     >
       {children}

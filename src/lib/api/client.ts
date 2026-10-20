@@ -31,8 +31,12 @@ export const fetchHerbs = (signal?: AbortSignal) =>
 export const fetchTaxonomy = (signal?: AbortSignal) =>
   request<Taxonomy>("/api/taxonomy", { signal }, "Não foi possível carregar as classificações.");
 
-export const fetchMarkers = (signal?: AbortSignal) =>
-  request<HerbMarker[]>("/api/markers", { signal }, "Não foi possível carregar os pontos.");
+export const fetchMarkers = (includeGone: boolean, signal?: AbortSignal) =>
+  request<HerbMarker[]>(
+    `/api/markers${includeGone ? "?incluirEsgotados=true" : ""}`,
+    { signal },
+    "Não foi possível carregar os pontos.",
+  );
 
 export const createMarker = (body: CreateMarkerInput) =>
   request<HerbMarker>("/api/markers", json("POST", body), "Não foi possível salvar.");

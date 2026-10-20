@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Leaf } from "lucide-react";
+import { Leaf, TriangleAlert } from "lucide-react";
+import { FavoriteButton, ListButton } from "@/components/herb-actions";
 import { LinkChips, TemperatureChip } from "@/components/chips";
 import { thumbUrl } from "@/lib/herb-utils";
 import type { HerbCard as HerbCardData } from "@/types/herb";
@@ -34,19 +35,35 @@ export function HerbThumb({
   );
 }
 
+export function RiskBadge({ className = "chip chip-risk" }: { className?: string }) {
+  return (
+    <span className={className} title="Esta erva exige cuidado. Veja a página dela no guia.">
+      <TriangleAlert size={13} aria-hidden />
+      Cuidado
+    </span>
+  );
+}
+
 export function HerbCard({ herb, priority = false }: { herb: HerbCardData; priority?: boolean }) {
   return (
-    <Link href={`/ervas/${herb.slug}`} className="herb-card">
-      <div className="herb-thumb">
-        <HerbThumb herb={herb} priority={priority} />
-        <TemperatureChip temperature={herb.temperature} />
+    <div className="herb-card-wrap">
+      <Link href={`/ervas/${herb.slug}`} className="herb-card">
+        <div className="herb-thumb">
+          <HerbThumb herb={herb} priority={priority} />
+          <TemperatureChip temperature={herb.temperature} />
+          {herb.hasRisk ? <RiskBadge className="chip chip-risk card-risk" /> : null}
+        </div>
+        <div className="herb-card-body">
+          <h3>{herb.name}</h3>
+          {herb.scientificName ? <p className="sci">{herb.scientificName}</p> : null}
+          <p className="herb-card-use">{herb.mainUse}</p>
+          <LinkChips items={herb.orixas} kind="orixa" limit={3} />
+        </div>
+      </Link>
+      <div className="card-actions">
+        <FavoriteButton slug={herb.slug} name={herb.name} className="card-btn" />
+        <ListButton slug={herb.slug} name={herb.name} className="card-btn" />
       </div>
-      <div className="herb-card-body">
-        <h3>{herb.name}</h3>
-        {herb.scientificName ? <p className="sci">{herb.scientificName}</p> : null}
-        <p className="herb-card-use">{herb.mainUse}</p>
-        <LinkChips items={herb.orixas} kind="orixa" limit={3} />
-      </div>
-    </Link>
+    </div>
   );
 }

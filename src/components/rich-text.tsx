@@ -1,22 +1,28 @@
 import { Fragment, type ReactNode } from "react";
+import Link from "next/link";
 
 /** Inline: **negrito** e *itálico* (sem HTML cru, tudo vira nó React). */
 function inline(text: string): ReactNode[] {
   const out: ReactNode[] = [];
-  const re = /(\*\*[^*]+\*\*|\*[^*]+\*)/g;
+  const re = /(\*\*[^*]+\*\*|\*[^*]+\*|\[[^\]]+\]\(\/[^)\s]*\))/g;
   let last = 0;
   let i = 0;
   for (const m of text.matchAll(re)) {
     const idx = m.index ?? 0;
     if (idx > last) out.push(text.slice(last, idx));
     const token = m[0];
-    out.push(
-      token.startsWith("**") ? (
-        <strong key={i++}>{token.slice(2, -2)}</strong>
-      ) : (
-        <em key={i++}>{token.slice(1, -1)}</em>
-      ),
-    );
+    const link = token.match(/^\[([^\]]+)\]\((\/[^)\s]*)\)$/);
+    if (link) {
+      out.push(
+        <Link key={i++} href={link[2]}>
+          {link[1]}
+        </Link>,
+      );
+    } else if (token.startsWith("**")) {
+      out.push(<strong key={i++}>{token.slice(2, -2)}</strong>);
+    } else {
+      out.push(<em key={i++}>{token.slice(1, -1)}</em>);
+    }
     last = idx + token.length;
   }
   if (last < text.length) out.push(text.slice(last));

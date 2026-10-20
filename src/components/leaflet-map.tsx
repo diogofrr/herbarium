@@ -12,6 +12,7 @@ import {
   useMap,
   useMapEvents,
 } from "react-leaflet";
+import { isStaleMarker } from "@/lib/herb-utils";
 import { UBERLANDIA_BOUNDS, UBERLANDIA_CENTER, isWithinUberlandia } from "@/lib/uberlandia";
 import type { HerbMarker, Temperature } from "@/types/herb";
 
@@ -49,10 +50,13 @@ function pinIcon(marker: HerbMarker, selected: boolean) {
   const size = big ? 46 : 36;
   const color = TEMPERATURE_COLOR[marker.herb.temperature];
   // "muita erva" ganha pino maior e uma folha a mais, "pouca" um pino menor.
-  const badge = big ? '<i class="pin-more" aria-hidden="true">+</i>' : "";
+  const badge =
+    (big ? '<i class="pin-more" aria-hidden="true">+</i>' : "") +
+    (marker.herb.hasRisk ? '<i class="pin-risk" aria-hidden="true">!</i>' : "");
+  const stale = isStaleMarker(marker.lastConfirmedAt);
   return L.divIcon({
     className: "",
-    html: `<span class="herb-pin${selected ? " is-selected" : ""}" style="width:${size}px;height:${size}px;background:${color}"><span class="pin-leaf" style="width:${Math.round(size * 0.52)}px;height:${Math.round(size * 0.52)}px">${LEAF_SVG}</span></span>${badge}`,
+    html: `<span class="herb-pin${selected ? " is-selected" : ""}${stale ? " is-stale" : ""}${marker.goneAt ? " is-gone" : ""}" style="width:${size}px;height:${size}px;background:${color}"><span class="pin-leaf" style="width:${Math.round(size * 0.52)}px;height:${Math.round(size * 0.52)}px">${LEAF_SVG}</span></span>${badge}`,
     iconSize: [size, size],
     iconAnchor: [size / 2, size],
   });
@@ -175,7 +179,7 @@ function ClusterLayer({
       const marker = L.marker([m.lat, m.lng], {
         icon: pinIcon(m, m.id === selectedRef.current),
         keyboard: true,
-        title: `${m.herb.name} (${m.status === "muita" ? "muita" : "pouca"} erva)`,
+        title: `${m.herb.name} (${m.status === "muita" ? "muita" : "pouca"} erva${isStaleMarker(m.lastConfirmedAt) ? ", sem confirmação recente" : ""})`,
       });
       marker.on("click", () => onSelectRef.current(m));
       group.addLayer(marker);

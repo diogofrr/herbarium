@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Camera, Leaf, LogIn, LogOut, Map as MapIcon, User } from "lucide-react";
+import { BookOpen, Camera, FlaskConical, Leaf, LogIn, LogOut, Map as MapIcon, User } from "lucide-react";
 import { AuthModal } from "@/components/auth-modal";
 import { InstallButton } from "@/components/pwa";
 import { useAuth } from "@/context/auth-context";
@@ -11,6 +11,7 @@ import { useAuth } from "@/context/auth-context";
 const LINKS = [
   { href: "/", label: "Mapa", Icon: MapIcon },
   { href: "/ervas", label: "Guia de ervas", Icon: BookOpen },
+  { href: "/preparo", label: "Preparo", Icon: FlaskConical },
   { href: "/identificar", label: "Identificar", Icon: Camera },
 ] as const;
 
@@ -20,8 +21,7 @@ function isActive(pathname: string, href: string) {
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const { user, isAuthenticated, logout, isLoading } = useAuth();
-  const [authOpen, setAuthOpen] = useState(false);
+  const { user, isAuthenticated, logout, isLoading, loginOpen, openLogin, closeLogin } = useAuth();
 
   return (
     <div className="shell">
@@ -47,14 +47,21 @@ export function AppShell({ children }: { children: ReactNode }) {
         {!isLoading &&
           (isAuthenticated ? (
             <div className="nav-user">
-              <span className="nav-user-name">{user?.name}</span>
+              <Link href="/minhas-ervas" className="nav-user-name">
+                {user?.name}
+              </Link>
+              {user?.role === "ADMIN" ? (
+                <Link href="/admin" className="btn btn-on-dark">
+                  Admin
+                </Link>
+              ) : null}
               <button type="button" className="btn btn-on-dark" onClick={() => void logout()}>
                 <LogOut size={16} aria-hidden />
                 Sair
               </button>
             </div>
           ) : (
-            <button type="button" className="btn btn-on-dark" onClick={() => setAuthOpen(true)}>
+            <button type="button" className="btn btn-on-dark" onClick={() => openLogin()}>
               <LogIn size={16} aria-hidden />
               Entrar
             </button>
@@ -76,19 +83,19 @@ export function AppShell({ children }: { children: ReactNode }) {
           </Link>
         ))}
         {isAuthenticated ? (
-          <button type="button" className="tab" onClick={() => void logout()}>
+          <Link href="/conta" className="tab" aria-current={isActive(pathname, "/conta") ? "page" : undefined}>
             <User size={22} aria-hidden />
-            Sair
-          </button>
+            Conta
+          </Link>
         ) : (
-          <button type="button" className="tab" onClick={() => setAuthOpen(true)}>
+          <button type="button" className="tab" onClick={() => openLogin()}>
             <User size={22} aria-hidden />
             Entrar
           </button>
         )}
       </nav>
 
-      <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
+      <AuthModal open={loginOpen} onClose={closeLogin} />
     </div>
   );
 }

@@ -1,9 +1,19 @@
 "use client";
 
+import { useState } from "react";
 import { X } from "lucide-react";
 import { Dialog, DialogClose, DialogContent } from "@/components/ui/dialog";
-import { EMPTY_FILTERS, TEMPERATURE_META, countActiveFilters } from "@/lib/herb-utils";
-import type { HerbFilters, Taxonomy, Temperature } from "@/types/herb";
+import { EMPTY_FILTERS, TEMPERATURE_META, countActiveFilters, fold } from "@/lib/herb-utils";
+import type { HerbFilters, MarkerStatus, Taxonomy, Temperature } from "@/types/herb";
+
+/** Filtros que só existem no mapa: quantidade de erva e erva específica. */
+export type MapFilterExtras = {
+  status: MarkerStatus | null;
+  onStatus: (next: MarkerStatus | null) => void;
+  herbOptions: { slug: string; name: string; count: number }[];
+  onlyHerb: string | null;
+  onOnlyHerb: (slug: string | null) => void;
+};
 
 type Props = {
   open: boolean;
@@ -13,6 +23,7 @@ type Props = {
   taxonomy: Taxonomy | undefined;
   resultCount: number;
   resultNoun: string;
+  extras?: MapFilterExtras;
 };
 
 const TEMPS: Temperature[] = ["quente", "morna", "fria"];
@@ -25,7 +36,14 @@ export function FilterSheet({
   taxonomy,
   resultCount,
   resultNoun,
+  extras,
 }: Props) {
+  const [herbQuery, setHerbQuery] = useState("");
+  const herbMatches = extras
+    ? extras.herbOptions
+        .filter((h) => !herbQuery.trim() || fold(h.name).includes(fold(herbQuery)))
+        .slice(0, 12)
+    : [];
   const toggle = <K extends "orixa" | "povo" | "funcao">(key: K, value: string) =>
     onChange({ ...filters, [key]: filters[key] === value ? null : value });
 
@@ -40,6 +58,54 @@ export function FilterSheet({
             </button>
           </DialogClose>
         </div>
+
+        {extras ? (
+          <>
+            <section className="filter-group" aria-label="Quantidade">
+              <h3>Quantidade de erva</h3>
+              <div className="chip-row">
+                {(["muita", "pouca"] as const).map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    className={`chip${extras.status === v ? " is-on" : ""}`}
+                    aria-pressed={extras.status === v}
+                    onClick={() => extras.onStatus(extras.status === v ? null : v)}
+                  >
+                    {v === "muita" ? "Tem muita" : "Tem pouca"}
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <section className="filter-group" aria-label="Erva">
+              <h3>Erva</h3>
+              <input
+                type="search"
+                className="filter-search"
+                value={herbQuery}
+                placeholder="Buscar erva com ponto no mapa"
+                aria-label="Buscar erva com ponto no mapa"
+                onChange={(e) => setHerbQuery(e.target.value)}
+              />
+              <div className="chip-row">
+                {herbMatches.map((h) => (
+                  <button
+                    key={h.slug}
+                    type="button"
+                    className={`chip${extras.onlyHerb === h.slug ? " is-on" : ""}`}
+                    aria-pressed={extras.onlyHerb === h.slug}
+                    onClick={() => extras.onOnlyHerb(extras.onlyHerb === h.slug ? null : h.slug)}
+                  >
+                    {h.name}
+                    <small>{h.count}</small>
+                  </button>
+                ))}
+                {herbMatches.length === 0 ? <span className="pv-small">Nenhuma erva encontrada.</span> : null}
+              </div>
+            </section>
+          </>
+        ) : null}
 
         <section className="filter-group" aria-label="Temperatura">
           <h3>Temperatura</h3>
@@ -118,8 +184,12 @@ export function FilterSheet({
           <button
             type="button"
             className="btn"
-            disabled={countActiveFilters(filters) === 0}
-            onClick={() => onChange({ ...EMPTY_FILTERS, q: filters.q })}
+            disabled={countActiveFilters(filters) === 0 && !extras?.status && !extras?.onlyHerb}
+            onClick={() => {
+              onChange({ ...EMPTY_FILTERS, q: filters.q });
+              extras?.onStatus(null);
+              extras?.onOnlyHerb(null);
+            }}
           >
             Limpar filtros
           </button>

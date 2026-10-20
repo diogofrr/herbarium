@@ -1,8 +1,9 @@
 /* Service worker do Herbarium: abre offline e economiza dados.
-   - páginas: rede primeiro, cai para o cache (e para /offline) sem rede
+   - páginas e guia (/ervas, /preparo, /identificar): rede primeiro, cai para o cache (e para /offline) sem rede.
+     O botão "Salvar guia para usar offline" busca todas elas e este worker as guarda
    - fotos e arquivos estáticos: cache primeiro
    - /api (exceto catálogo e taxonomia): nunca em cache */
-const VERSION = "v1";
+const VERSION = "v2";
 const PAGES = `herbarium-pages-${VERSION}`;
 const ASSETS = `herbarium-assets-${VERSION}`;
 const PHOTOS = `herbarium-photos-${VERSION}`;
@@ -47,6 +48,10 @@ async function cacheFirst(request, cacheName) {
   return res;
 }
 
+function isGuidePage(path) {
+  return path === "/ervas" || path.startsWith("/ervas/") || path === "/preparo" || path === "/identificar";
+}
+
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   if (request.method !== "GET") return;
@@ -57,11 +62,16 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(cacheFirst(request, PHOTOS));
   } else if (url.pathname.startsWith("/_next/static/") || url.pathname.startsWith("/icons/")) {
     event.respondWith(cacheFirst(request, ASSETS));
-  } else if (url.pathname === "/api/herbs" || url.pathname === "/api/taxonomy") {
+  } else if (
+    url.pathname === "/api/herbs" ||
+    url.pathname === "/api/taxonomy" ||
+    url.pathname === "/api/markers"
+  ) {
+    // Último catálogo e últimos pontos vistos continuam aparecendo sem rede.
     event.respondWith(networkFirst(request, DATA));
   } else if (url.pathname.startsWith("/api/")) {
     return;
-  } else if (request.mode === "navigate") {
+  } else if (request.mode === "navigate" || isGuidePage(url.pathname)) {
     event.respondWith(networkFirst(request, PAGES, "/offline"));
   }
 });

@@ -78,10 +78,56 @@ export type HerbMarker = {
   lat: number;
   lng: number;
   createdById: string | null;
+  createdByName: string | null;
+  hasPhoto: boolean;
   createdAt: string;
   updatedAt: string;
+  /** Última vez que alguém viu ou confirmou a erva neste ponto. */
+  lastConfirmedAt: string;
+  /** Quando foi dado como esgotado (só vem com "Esgotados" ligado). */
+  goneAt: string | null;
   herb: HerbCard;
 };
+
+export type MarkerEvent = {
+  id: string;
+  kind: "CREATED" | "STATUS" | "CONFIRMED" | "PHOTO" | "GONE";
+  status: MarkerStatus | null;
+  userName: string;
+  createdAt: string;
+};
+
+export type GoneResult = { hidden: boolean; reports: number; needed: number };
+
+export type MarkerDetail = HerbMarker & { events: MarkerEvent[] };
+
+export type HerbList = { id: string; name: string; herbSlugs: string[]; updatedAt: string };
+
+export type AdminUser = {
+  id: string;
+  email: string;
+  name: string;
+  role: "USER" | "HERBMASTER" | "ADMIN";
+  isActive: boolean;
+  markers: number;
+  createdAt: string;
+};
+
+export type AdminHerb = HerbDetail & { locked: boolean };
+
+export type UpdateHerbInput = Partial<{
+  name: string;
+  alternativeNames: string[];
+  temperature: Temperature;
+  mainUse: string;
+  summary: string;
+  functions: string[];
+  orixas: string[];
+  povos: string[];
+  hasRisk: boolean;
+  riskNote: string;
+  sections: HerbSection[];
+}>;
 
 export type CreateMarkerInput = {
   herbSlug: string;
