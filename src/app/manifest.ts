@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Herbarium: guia de ervas e mapa",
-    short_name: "Herbarium",
+    name: "Herbá: guia de ervas e mapa",
+    short_name: "Herbá",
     description: "Guia de ervas da Umbanda e mapa colaborativo de ervas em Uberlândia.",
     lang: "pt-BR",
     start_url: "/",

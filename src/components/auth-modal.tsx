@@ -92,7 +92,7 @@ export const AuthModal = memo(function AuthModal({
       }}
     >
       <DialogContent
-        title={mode === "login" ? "Entrar no Herbarium" : "Criar conta"}
+        title={mode === "login" ? "Entrar no Herbá" : "Criar conta"}
         description={
           mode === "login"
             ? "Faça login para adicionar ou editar marcadores."
@@ -114,7 +114,7 @@ export const AuthModal = memo(function AuthModal({
         <div className="auth-header">
           <Leaf size={24} />
           <h2 className="modal-title">
-            {mode === "login" ? "Entrar no Herbarium" : "Criar conta"}
+            {mode === "login" ? "Entrar no Herbá" : "Criar conta"}
           </h2>
           <p>
             {mode === "login"
