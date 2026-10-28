@@ -284,7 +284,7 @@ export function MarkerSheet({ marker, user, onClose, onEdit, onDelete, onChangeS
       {marker.notes ? <p className="sheet-meta">{marker.notes}</p> : null}
       {herb.hasRisk ? (
         <p className="sheet-meta" style={{ color: "var(--danger)", fontWeight: 600 }}>
-          Atenção: esta erva exige cuidado. Veja a página dela no guia.
+          Cuidado: esta erva pede atenção no uso. Leia o aviso na página dela no guia.
         </p>
       ) : null}
 

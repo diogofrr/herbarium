@@ -68,8 +68,8 @@ export function OfflineButton() {
       {progress !== null
         ? `Baixando… ${progress}%`
         : savedAt
-          ? `Guia salvo em ${savedAt}. Atualizar`
-          : "Salvar guia para usar offline"}
+          ? `Guia salvo em ${savedAt}. Toque para atualizar`
+          : "Salvar o guia para usar sem internet"}
     </button>
   );
 }

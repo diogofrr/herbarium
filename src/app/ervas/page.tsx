@@ -11,7 +11,7 @@ export const revalidate = 300;
 export const metadata: Metadata = {
   title: "Guia de ervas",
   description:
-    "Guia de ervas da Umbanda: para cada erva, os orixás, os povos de atuação, a temperatura e a função principal.",
+    "Guia de ervas da Umbanda: orixás, povos de atuação, temperatura e uso de cada erva.",
 };
 
 export default async function ErvasPage() {
@@ -21,10 +21,10 @@ export default async function ErvasPage() {
     <div className="container">
       <h1 className="page-title">Guia de ervas</h1>
       <p className="page-lead">
-        Orixás, povos de atuação, temperatura e função de cada erva, com fotos e fontes.
+        Para cada erva: orixás, povos de atuação, temperatura e para que ela serve, com fotos e fontes.
       </p>
       <p className="disclaimer">
-        Cada casa tem a sua doutrina. Aqui valem, em primeiro lugar, a apostila de ervas e, depois, o livro Rituais com Ervas. Converse com o dirigente da sua casa antes de usar qualquer erva. Não é orientação médica.
+        Cada casa tem a sua doutrina. Este guia segue a apostila de ervas e, depois, o livro Rituais com Ervas. Converse com o dirigente da sua casa antes de usar qualquer erva. O guia não substitui orientação médica.
       </p>
 
       <div className="guide-actions">

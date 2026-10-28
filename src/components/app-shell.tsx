@@ -28,7 +28,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <header className={`app-nav${pathname === "/" ? " on-map" : ""}`}>
         <Link href="/" className="brand">
           <Leaf size={22} aria-hidden />
-          Herbá
+          Ewé
         </Link>
         <nav className="nav-links" aria-label="Principal">
           {LINKS.map(({ href, label }) => (

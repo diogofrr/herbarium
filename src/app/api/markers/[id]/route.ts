@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { API_URL } from "@/lib/server/api";
+import { clientHeaders } from "@/lib/server/client-ip";
 import { apiErrorMessage, getSessionToken } from "@/lib/server/session";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -7,6 +8,7 @@ type Ctx = { params: Promise<{ id: string }> };
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 async function forward(
+  request: NextRequest,
   method: "PATCH" | "DELETE",
   id: string,
   body?: Record<string, unknown>,
@@ -22,7 +24,11 @@ async function forward(
   try {
     const res = await fetch(`${API_URL}/markers/${id}`, {
       method,
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+        ...clientHeaders(request),
+      },
       body: body ? JSON.stringify(body) : undefined,
     });
     const data = (await res.json().catch(() => null)) as unknown;
@@ -51,10 +57,10 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
   if (typeof body.addressLabel === "string") patch.addressLabel = body.addressLabel.trim();
   if (body.status === "muita" || body.status === "pouca") patch.status = body.status;
 
-  return forward("PATCH", id, patch);
+  return forward(request, "PATCH", id, patch);
 }
 
-export async function DELETE(_request: NextRequest, { params }: Ctx) {
+export async function DELETE(request: NextRequest, { params }: Ctx) {
   const { id } = await params;
-  return forward("DELETE", id);
+  return forward(request, "DELETE", id);
 }

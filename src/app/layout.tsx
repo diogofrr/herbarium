@@ -20,13 +20,13 @@ const bodyFont = Source_Sans_3({
 
 export const metadata: Metadata = {
   title: {
-    default: "Herbá | Mapa e guia de ervas da Umbanda",
-    template: "%s | Herbá",
+    default: "Ewé | Guia e mapa de ervas da Umbanda",
+    template: "%s | Ewé",
   },
   description:
-    "Mapa colaborativo de ervas em Uberlândia e guia de ervas da Umbanda: orixás, povos, temperatura e função de cada erva.",
-  applicationName: "Herbá",
-  appleWebApp: { capable: true, title: "Herbá", statusBarStyle: "black-translucent" },
+    "Guia de ervas da Umbanda com mapa colaborativo de Uberlândia: orixás, povos de atuação, temperatura e uso de cada erva.",
+  applicationName: "Ewé",
+  appleWebApp: { capable: true, title: "Ewé", statusBarStyle: "black-translucent" },
   icons: {
     icon: [{ url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
     apple: "/apple-touch-icon.png",

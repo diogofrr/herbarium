@@ -1,6 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 import { API_URL } from "@/lib/server/api";
+import { clientHeaders } from "@/lib/server/client-ip";
 import { apiErrorMessage, getSessionToken } from "@/lib/server/session";
 
 export const dynamic = "force-dynamic";
@@ -27,7 +28,7 @@ async function forward(request: NextRequest, { params }: Ctx) {
   }
 
   const hasBody = request.method !== "GET" && request.method !== "DELETE";
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = { ...clientHeaders(request) };
   if (token) headers.Authorization = `Bearer ${token}`;
   if (hasBody) headers["Content-Type"] = "application/json";
 

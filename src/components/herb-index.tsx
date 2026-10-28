@@ -179,7 +179,7 @@ export function HerbIndex({
         </ul>
       ) : (
         <div className="empty">
-          <p>Nenhuma erva encontrada com esses filtros.</p>
+          <p>Nenhuma erva combina com esses filtros. Tente tirar algum.</p>
           <button type="button" className="btn" onClick={() => { setText(""); go(EMPTY_FILTERS, null); }}>
             Limpar busca e filtros
           </button>

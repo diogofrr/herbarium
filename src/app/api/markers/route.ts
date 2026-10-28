@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { API_URL } from "@/lib/server/api";
+import { clientHeaders } from "@/lib/server/client-ip";
 import { apiErrorMessage, getSessionToken } from "@/lib/server/session";
 import { isWithinUberlandia } from "@/lib/uberlandia";
 
@@ -9,6 +10,7 @@ export async function GET(request: NextRequest) {
   const withGone = request.nextUrl.searchParams.get("incluirEsgotados") === "true";
   try {
     const res = await fetch(`${API_URL}/markers${withGone ? "?incluirEsgotados=true" : ""}`, {
+      headers: clientHeaders(request),
       cache: "no-store",
     });
     if (!res.ok) {
@@ -54,7 +56,11 @@ export async function POST(request: NextRequest) {
   try {
     const res = await fetch(`${API_URL}/markers`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+        ...clientHeaders(request),
+      },
       body: JSON.stringify({
         herbSlug,
         status,

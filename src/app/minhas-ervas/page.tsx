@@ -113,7 +113,7 @@ export default function MinhasErvasPage() {
     return (
       <div className="container acct">
         <h1 className="page-title">Minhas ervas</h1>
-        <p className="page-lead">Entre para guardar suas ervas favoritas e montar listas.</p>
+        <p className="page-lead">Entre para guardar suas favoritas e organizar listas de ervas.</p>
         <button type="button" className="btn btn-primary" onClick={openLogin}>
           <LogIn size={18} aria-hidden />
           Entrar
@@ -125,7 +125,7 @@ export default function MinhasErvasPage() {
   return (
     <div className="container acct">
       <h1 className="page-title">Minhas ervas</h1>
-      <p className="page-lead">Suas favoritas e as listas que você montou, só você vê.</p>
+      <p className="page-lead">Suas favoritas e suas listas. Só você vê.</p>
 
       <section className="pv-section">
         <header className="pv-head">
@@ -138,7 +138,7 @@ export default function MinhasErvasPage() {
         </header>
         {favHerbs.length === 0 ? (
           <p className="pv-small">
-            Nenhuma favorita ainda. No <Link href="/ervas">guia de ervas</Link>, toque no coração de uma erva.
+            Você ainda não favoritou nenhuma erva. No <Link href="/ervas">guia de ervas</Link>, toque no coração da erva que quiser guardar.
           </p>
         ) : (
           <ul className="herb-rows">
@@ -153,7 +153,7 @@ export default function MinhasErvasPage() {
         <header className="pv-head">
           <div>
             <h2>Listas</h2>
-            <p>Por exemplo: banho de descarrego, defumação da casa.</p>
+            <p>Crie listas para o que você prepara, como banho de descarrego ou defumação da casa.</p>
           </div>
         </header>
 

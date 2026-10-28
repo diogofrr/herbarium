@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { API_URL } from "@/lib/server/api";
+import { clientHeaders } from "@/lib/server/client-ip";
 import { apiErrorMessage, setSessionToken } from "@/lib/server/session";
 
 export async function POST(request: NextRequest) {
@@ -11,7 +12,7 @@ export async function POST(request: NextRequest) {
   try {
     const res = await fetch(`${API_URL}/auth/register`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...clientHeaders(request) },
       body: JSON.stringify({ name: body.name, orixa: body.orixa, email: body.email, password: body.password }),
     });
     const data = (await res.json().catch(() => null)) as unknown;

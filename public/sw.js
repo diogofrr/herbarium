@@ -1,4 +1,4 @@
-/* Service worker do Herbá: abre offline e economiza dados.
+/* Service worker do Ewé: abre offline e economiza dados.
    - páginas e guia (/ervas, /preparo, /identificar): rede primeiro, cai para o cache (e para /offline) sem rede.
      O botão "Salvar guia para usar offline" busca todas elas e este worker as guarda
    - fotos e arquivos estáticos: cache primeiro
