@@ -6,6 +6,8 @@ import { getSessionToken, verifyToken } from "@/lib/server/session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// O Pl@ntNet pode demorar alguns segundos; sem isso a Vercel corta a função cedo.
+export const maxDuration = 30;
 
 const MAX_BYTES = 4 * 1024 * 1024;
 const ALLOWED = new Set(["image/jpeg", "image/png"]);
