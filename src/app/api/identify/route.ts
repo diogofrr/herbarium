@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { API_URL } from "@/lib/server/api";
+import { clientHeaders } from "@/lib/server/client-ip";
 import { ORGANS, PlantNetError, identifyPlant, type Organ } from "@/lib/server/plantnet";
 import { getSessionToken, verifyToken } from "@/lib/server/session";
 
@@ -8,68 +10,34 @@ export const dynamic = "force-dynamic";
 const MAX_BYTES = 4 * 1024 * 1024;
 const ALLOWED = new Set(["image/jpeg", "image/png"]);
 
-// Limite simples por usuário (a cota do Pl@ntNet é diária e compartilhada).
-const hits = new Map<string, number[]>();
-function rateLimited(user: string): boolean {
-  const now = Date.now();
-  const recent = (hits.get(user) ?? []).filter((t) => now - t < 60_000);
-  if (recent.length >= 6) {
-    hits.set(user, recent);
-    return true;
-  }
-  recent.push(now);
-  hits.set(user, recent);
-  return false;
-}
+type Quota =
+  | { allowed: true }
+  | { allowed: false; reason: "user" | "global"; limit: number }
+  | null;
 
-// Limite diário por usuário (dia de Brasília, UTC-3), para ninguém esgotar a cota de todos.
-const DAILY_LIMIT = 20;
-const daily = new Map<string, { day: string; count: number }>();
-function brazilDay(): string {
-  return new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10);
-}
-// Teto de todos os usuários juntos, abaixo da cota gratuita do Pl@ntNet (500/dia).
-const GLOBAL_DAILY_LIMIT = Number(process.env.PLANTNET_DAILY_BUDGET) || 450;
-const budget = { day: "", count: 0 };
-
-type TakeResult = "ok" | "user" | "global";
-
-function takeDaily(user: string): TakeResult {
-  const day = brazilDay();
-  if (budget.day !== day) {
-    budget.day = day;
-    budget.count = 0;
-    for (const [key, value] of daily) if (value.day !== day) daily.delete(key);
-  }
-  const entry = daily.get(user);
-  const current = entry && entry.day === day ? entry : { day, count: 0 };
-  if (current.count >= DAILY_LIMIT) return "user";
-  if (budget.count >= GLOBAL_DAILY_LIMIT) return "global";
-  current.count += 1;
-  budget.count += 1;
-  daily.set(user, current);
-  return "ok";
-}
-function refundDaily(user: string) {
-  const entry = daily.get(user);
-  if (entry && entry.count > 0) entry.count -= 1;
-  if (budget.count > 0) budget.count -= 1;
+/**
+ * A cota diária (por usuário e de todos juntos, por causa do limite gratuito do Pl@ntNet)
+ * fica na API: aqui não há memória que se possa contar, pois o front roda em várias instâncias.
+ */
+async function callQuota(action: "take" | "refund", token: string, request: NextRequest) {
+  const res = await fetch(`${API_URL}/me/identify/${action}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, ...clientHeaders(request) },
+    cache: "no-store",
+  });
+  if (res.status === 429) return "throttled" as const;
+  if (!res.ok) return null;
+  return (await res.json().catch(() => null)) as Quota;
 }
 
 export async function POST(request: NextRequest) {
   // Exige login: protege a cota da chave e evita abuso anônimo.
   const token = await getSessionToken();
   const session = token ? verifyToken(token) : null;
-  if (!session?.sub) {
+  if (!token || !session?.sub) {
     return NextResponse.json(
       { error: "Entre na sua conta para identificar plantas." },
       { status: 401 },
-    );
-  }
-  if (rateLimited(session.sub)) {
-    return NextResponse.json(
-      { error: "Muitas identificações seguidas. Aguarde um minuto." },
-      { status: 429 },
     );
   }
 
@@ -87,18 +55,25 @@ export async function POST(request: NextRequest) {
   const organRaw = String(form?.get("organ") ?? "auto");
   const organ: Organ = (ORGANS as string[]).includes(organRaw) ? (organRaw as Organ) : "auto";
 
-  const quota = takeDaily(session.sub);
-  if (quota === "user") {
+  const quota = await callQuota("take", token, request).catch(() => null);
+  if (quota === "throttled") {
     return NextResponse.json(
-      { error: `Você já fez ${DAILY_LIMIT} identificações hoje. Volte amanhã.` },
+      { error: "Muitas identificações seguidas. Aguarde um minuto." },
       { status: 429 },
     );
   }
-  if (quota === "global") {
+  if (!quota) {
     return NextResponse.json(
-      { error: "O limite de identificações de hoje acabou para todos. Tente amanhã." },
-      { status: 429 },
+      { error: "Não foi possível verificar o limite agora. Tente de novo em instantes." },
+      { status: 503 },
     );
+  }
+  if (!quota.allowed) {
+    const error =
+      quota.reason === "user"
+        ? `Você já fez ${quota.limit} identificações hoje. Volte amanhã.`
+        : "O limite de identificações de hoje acabou para todos. Tente amanhã.";
+    return NextResponse.json({ error }, { status: 429 });
   }
 
   try {
@@ -106,7 +81,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ data: result });
   } catch (err) {
     // Falha do serviço não gasta a cota do usuário.
-    refundDaily(session.sub);
+    await callQuota("refund", token, request).catch(() => undefined);
     if (err instanceof PlantNetError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
     }

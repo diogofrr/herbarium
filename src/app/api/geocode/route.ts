@@ -10,19 +10,12 @@ type GeocodeResult = {
   lon: string;
 };
 
-const cache = new Map<string, { data: { label: string; lat: number; lng: number }[]; expires: number }>();
-
 export async function GET(request: NextRequest) {
   const q = (request.nextUrl.searchParams.get("q") ?? "").trim();
 
   if (q.length < 3) {
     return NextResponse.json({ data: [] });
   }
-
-  // O Nominatim pede no máximo 1 consulta por segundo: com mais gente, repetições saem do cache.
-  const cacheKey = q.toLowerCase();
-  const cached = cache.get(cacheKey);
-  if (cached && cached.expires > Date.now()) return NextResponse.json({ data: cached.data });
 
   const params = new URLSearchParams({
     q: `${q}, Uberlândia, Minas Gerais, Brasil`,
@@ -39,7 +32,8 @@ export async function GET(request: NextRequest) {
       "User-Agent": "herbarium-uberlandia/1.0",
       "Accept-Language": "pt-BR",
     },
-    cache: "no-store",
+    // O Nominatim pede no máximo 1 consulta por segundo: repetições saem do cache do Next.
+    next: { revalidate: 600 },
   }).catch(() => null);
 
   if (!response || !response.ok) {
@@ -71,7 +65,5 @@ export async function GET(request: NextRequest) {
     lng: Number(item.lon),
   }));
 
-  if (cache.size >= 500) cache.delete(cache.keys().next().value as string);
-  cache.set(cacheKey, { data, expires: Date.now() + 10 * 60_000 });
   return NextResponse.json({ data });
 }

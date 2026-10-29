@@ -38,8 +38,7 @@ crédito e licença aparecem na página de cada erva.
 |----------|--------|--------|
 | `HERBARIUM_API_URL` | `http://localhost:8081` | URL da herbarium-api |
 | `JWT_SECRET` | (obrigatória) | Mesmo segredo da API; usado para validar a assinatura da sessão |
-| `PLANTNET_API_KEY` | (opcional) | Chave do Pl@ntNet; só no servidor |
-| `PLANTNET_DAILY_BUDGET` | `450` | Teto diário de identificações de todos os usuários juntos (a cota gratuita é 500); cada usuário tem 20 por dia |
+| `PLANTNET_API_KEY` | (opcional) | Chave do Pl@ntNet; só no servidor. A cota diária (20 por usuário e 450 no total) fica na API, em `IDENTIFY_USER_LIMIT` e `PLANTNET_DAILY_BUDGET` |
 | `BFF_SECRET` | (recomendada) | Mesmo valor da API; faz a API contar o limite de requisições por usuário e não pelo IP deste servidor |
 
 ## App instalável (PWA)
