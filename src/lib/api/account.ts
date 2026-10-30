@@ -44,8 +44,8 @@ export const markerPhotoUrl = (id: string, version: string) =>
 
 // Administração
 export const fetchAdminUsers = () => call<AdminUser[]>("admin/users", "GET");
-export const setUserActive = (id: string, isActive: boolean) =>
-  call<AdminUser[]>(`admin/users/${id}`, "PATCH", { isActive });
+export const updateAdminUser = (id: string, body: { isActive?: boolean; role?: "USER" | "HERBMASTER" }) =>
+  call<AdminUser[]>(`admin/users/${id}`, "PATCH", body);
 export const fetchAdminHerb = (slug: string) => call<AdminHerb>(`admin/herbs/${slug}`, "GET");
 export const saveAdminHerb = (slug: string, body: UpdateHerbInput) =>
   call<AdminHerb>(`admin/herbs/${slug}`, "PATCH", body);

@@ -70,9 +70,9 @@ export function InstallButton({ className = "btn btn-on-dark", label = "Instalar
         {label}
       </button>
       <Dialog open={help} onOpenChange={setHelp}>
-        <DialogContent title="Instalar o Ewé" description="Como adicionar o app à tela inicial do iPhone.">
+        <DialogContent title="Instalar o Herbá" description="Como adicionar o app à tela inicial do iPhone.">
           <div className="modal-header">
-            <h2 className="modal-title">Instalar o Ewé</h2>
+            <h2 className="modal-title">Instalar o Herbá</h2>
             <DialogClose asChild>
               <button type="button" className="modal-close" aria-label="Fechar">
                 <X size={18} />

@@ -35,11 +35,11 @@ export default function ContaPage() {
           <strong>Minhas ervas</strong>
           <span>Favoritas e listas para banhos e defumações.</span>
         </Link>
-        {user.role === "ADMIN" ? (
+        {user.role === "ADMIN" || user.role === "HERBMASTER" ? (
           <Link href="/admin" className="pv-card acct-link">
             <ShieldCheck size={22} aria-hidden />
-            <strong>Administração</strong>
-            <span>Editar ervas e gerenciar usuários.</span>
+            <strong>{user.role === "ADMIN" ? "Administração" : "Curadoria"}</strong>
+            <span>{user.role === "ADMIN" ? "Editar ervas e gerenciar usuários." : "Corrigir informações das ervas."}</span>
           </Link>
         ) : null}
       </div>

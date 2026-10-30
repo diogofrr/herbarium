@@ -9,7 +9,7 @@ import {
   fetchAdminHerb,
   fetchAdminUsers,
   saveAdminHerb,
-  setUserActive,
+  updateAdminUser,
   unlockAdminHerb,
 } from "@/lib/api/account";
 import { fold } from "@/lib/herb-utils";
@@ -310,20 +310,35 @@ function Users() {
             <strong>{u.name}</strong>
             <small>{u.email}</small>
             <small>
-              {u.role === "ADMIN" ? "Administrador · " : ""}
+              {u.role === "ADMIN" ? "Administrador · " : u.role === "HERBMASTER" ? "Mantenedor · " : ""}
               {u.markers} marcações · desde {new Date(u.createdAt).toLocaleDateString("pt-BR")}
             </small>
           </div>
-          {u.id === me?.id ? null : (
-            <button
-              type="button"
-              className={`btn${u.isActive ? " btn-danger" : ""}`}
-              onClick={() =>
-                setUserActive(u.id, !u.isActive).then(setUsers).catch((e: Error) => setError(e.message))
-              }
-            >
-              {u.isActive ? "Desativar" : "Reativar"}
-            </button>
+          {u.id === me?.id || u.role === "ADMIN" ? null : (
+            <div className="chip-row">
+              <button
+                type="button"
+                className="btn"
+                onClick={() =>
+                  updateAdminUser(u.id, { role: u.role === "HERBMASTER" ? "USER" : "HERBMASTER" })
+                    .then(setUsers)
+                    .catch((e: Error) => setError(e.message))
+                }
+              >
+                {u.role === "HERBMASTER" ? "Remover mantenedor" : "Tornar mantenedor"}
+              </button>
+              <button
+                type="button"
+                className={`btn${u.isActive ? " btn-danger" : ""}`}
+                onClick={() =>
+                  updateAdminUser(u.id, { isActive: !u.isActive })
+                    .then(setUsers)
+                    .catch((e: Error) => setError(e.message))
+                }
+              >
+                {u.isActive ? "Desativar" : "Reativar"}
+              </button>
+            </div>
           )}
         </li>
       ))}
@@ -346,11 +361,12 @@ export default function AdminPage() {
   }, [catalog.data, q]);
 
   if (isLoading) return <div className="container" />;
-  if (user?.role !== "ADMIN") {
+  const isAdmin = user?.role === "ADMIN";
+  if (!isAdmin && user?.role !== "HERBMASTER") {
     return (
       <div className="container acct">
         <h1 className="page-title">Administração</h1>
-        <p className="page-lead">Esta área é só para o administrador do guia.</p>
+        <p className="page-lead">Esta área é só para o administrador e os mantenedores do guia.</p>
       </div>
     );
   }
@@ -358,7 +374,7 @@ export default function AdminPage() {
   return (
     <div className="container admin">
       <h1 className="page-title">Administração</h1>
-      <div className="chip-row" role="tablist" aria-label="Seções">
+      <div className="chip-row" role="tablist" aria-label="Seções" hidden={!isAdmin}>
         {(["ervas", "usuarios"] as const).map((t) => (
           <button
             key={t}
@@ -373,7 +389,7 @@ export default function AdminPage() {
         ))}
       </div>
 
-      {tab === "usuarios" ? (
+      {isAdmin && tab === "usuarios" ? (
         <Users />
       ) : slug ? (
         <HerbEditor key={slug} slug={slug} taxonomy={taxonomy.data} onBack={() => setSlug(null)} />

@@ -28,7 +28,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <header className={`app-nav${pathname === "/" ? " on-map" : ""}`}>
         <Link href="/" className="brand">
           <Leaf size={22} aria-hidden />
-          Ewé
+          Herbá
         </Link>
         <nav className="nav-links" aria-label="Principal">
           {LINKS.map(({ href, label }) => (
@@ -50,9 +50,9 @@ export function AppShell({ children }: { children: ReactNode }) {
               <Link href="/minhas-ervas" className="nav-user-name">
                 {user?.name}
               </Link>
-              {user?.role === "ADMIN" ? (
+              {user?.role === "ADMIN" || user?.role === "HERBMASTER" ? (
                 <Link href="/admin" className="btn btn-on-dark">
-                  Admin
+                  {user.role === "ADMIN" ? "Admin" : "Curadoria"}
                 </Link>
               ) : null}
               <button type="button" className="btn btn-on-dark" onClick={() => void logout()}>
