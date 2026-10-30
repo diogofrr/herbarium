@@ -5,6 +5,16 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        // Cabeçalhos de segurança em todas as páginas (a câmera e a localização são usadas pelo app).
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(self), geolocation=(self), microphone=(), payment=()" },
+        ],
+      },
+      {
         // O service worker precisa ser sempre revalidado para as atualizações chegarem.
         source: "/sw.js",
         headers: [
