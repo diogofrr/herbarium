@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Camera, Loader2, LogIn, ScanSearch } from "lucide-react";
 import { AuthModal } from "@/components/auth-modal";
@@ -43,7 +43,6 @@ export function PlantIdentifier() {
   const { isAuthenticated, isLoading } = useAuth();
   const [authOpen, setAuthOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
   const [organ, setOrgan] = useState<(typeof ORGANS)[number]["value"]>("auto");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,12 +50,11 @@ export function PlantIdentifier() {
   const [remaining, setRemaining] = useState<number | null>(null);
   const input = useRef<HTMLInputElement>(null);
 
+  const preview = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
   useEffect(() => {
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    setPreview(url);
-    return () => URL.revokeObjectURL(url);
-  }, [file]);
+    if (!preview) return;
+    return () => URL.revokeObjectURL(preview);
+  }, [preview]);
 
   async function run() {
     if (!file) return;
