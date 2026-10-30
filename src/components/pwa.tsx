@@ -56,6 +56,7 @@ export function InstallButton({ className = "btn btn-on-dark", label = "Instalar
       <button
         type="button"
         className={className}
+        aria-label={label}
         onClick={async () => {
           if (event) {
             await event.prompt();
@@ -67,7 +68,7 @@ export function InstallButton({ className = "btn btn-on-dark", label = "Instalar
         }}
       >
         <Download size={16} aria-hidden />
-        {label}
+        <span className="install-label">{label}</span>
       </button>
       <Dialog open={help} onOpenChange={setHelp}>
         <DialogContent title="Instalar o Herbá" description="Como adicionar o app à tela inicial do iPhone.">

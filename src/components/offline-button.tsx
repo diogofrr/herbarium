@@ -63,7 +63,7 @@ export function OfflineButton() {
   };
 
   return (
-    <button type="button" className="btn" disabled={progress !== null || !catalog.data} onClick={() => void run()}>
+    <button type="button" className="btn btn-wrap" disabled={progress !== null || !catalog.data} onClick={() => void run()}>
       {savedAt && progress === null ? <Check size={16} aria-hidden /> : <CloudDownload size={16} aria-hidden />}
       {progress !== null
         ? `Baixando… ${progress}%`
