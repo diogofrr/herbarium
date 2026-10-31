@@ -2816,3 +2816,30 @@ button.chip.is-on.chip-temp-fria:hover {
   border-color: var(--line);
   color: var(--ink-soft);
 }
+
+.admin-photos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.admin-photos figure {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.admin-photos img {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.btn.is-disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}

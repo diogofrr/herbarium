@@ -2,7 +2,7 @@
  * Reduz a foto no aparelho antes de enviar: lado maior de até 1024 px, JPEG,
  * ajustando a qualidade até caber em ~300 KB. Devolve base64 sem o prefixo data:.
  */
-export async function compressPhoto(file: File): Promise<{ mime: "image/jpeg"; data: string }> {
+export async function compressPhoto(file: File): Promise<{ mime: "image/jpeg"; data: string; width: number; height: number }> {
   const bitmap = await createImageBitmap(file);
   const scale = Math.min(1, 1024 / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement("canvas");
@@ -26,5 +26,5 @@ export async function compressPhoto(file: File): Promise<{ mime: "image/jpeg"; d
   for (let i = 0; i < bytes.length; i += 0x8000) {
     binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
   }
-  return { mime: "image/jpeg", data: btoa(binary) };
+  return { mime: "image/jpeg", data: btoa(binary), width: canvas.width, height: canvas.height };
 }

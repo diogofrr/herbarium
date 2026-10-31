@@ -2,17 +2,21 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Lock, Plus, RotateCcw, Search, Trash2 } from "lucide-react";
+import { ArrowLeft, ImagePlus, Lock, Plus, RotateCcw, Search, Trash2 } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { useHerbCatalog, useTaxonomy } from "@/hooks";
 import {
+  createAdminHerb,
   fetchAdminHerb,
   fetchAdminUsers,
+  removeHerbPhoto,
   saveAdminHerb,
   updateAdminUser,
   unlockAdminHerb,
+  uploadHerbPhoto,
 } from "@/lib/api/account";
-import { fold } from "@/lib/herb-utils";
+import { fold, imageUrl, isUploadedImage } from "@/lib/herb-utils";
+import { compressPhoto } from "@/lib/image";
 import type { AdminHerb, AdminUser, HerbSection, Taxonomy, Temperature } from "@/types/herb";
 
 type Tab = "ervas" | "usuarios";
@@ -52,16 +56,22 @@ function ChipPicker({
   );
 }
 
+/** slug null = erva nova (ainda não existe; as fotos só entram depois de criar). */
 function HerbEditor({
   slug,
   taxonomy,
   onBack,
+  onCreated,
 }: {
-  slug: string;
+  slug: string | null;
   taxonomy: Taxonomy | undefined;
   onBack: () => void;
+  onCreated: (slug: string) => void;
 }) {
   const [herb, setHerb] = useState<AdminHerb | null>(null);
+  const [photoAlt, setPhotoAlt] = useState("");
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -94,6 +104,7 @@ function HerbEditor({
   };
 
   useEffect(() => {
+    if (slug === null) return;
     let alive = true;
     fetchAdminHerb(slug)
       .then((h) => alive && load(h))
@@ -108,7 +119,7 @@ function HerbEditor({
     setMsg(null);
     setError(null);
     try {
-      const saved = await saveAdminHerb(slug, {
+      const body = {
         name: name.trim(),
         alternativeNames: alt.split(",").map((s) => s.trim()).filter(Boolean),
         temperature,
@@ -120,7 +131,13 @@ function HerbEditor({
         hasRisk,
         riskNote: riskNote.trim(),
         sections: sections.filter((s) => s.title.trim()),
-      });
+      };
+      if (slug === null) {
+        const created = await createAdminHerb(body);
+        onCreated(created.slug);
+        return;
+      }
+      const saved = await saveAdminHerb(slug, body);
       load(saved);
       setMsg("Salvo. A página pública já mostra a mudança.");
     } catch (e) {
@@ -130,7 +147,40 @@ function HerbEditor({
     }
   };
 
+  const addPhoto = async (file: File | undefined) => {
+    if (!file || slug === null || !herb) return;
+    setPhotoBusy(true);
+    setPhotoError(null);
+    try {
+      const { mime, data, width, height } = await compressPhoto(file);
+      const saved = await uploadHerbPhoto(slug, {
+        mime,
+        data,
+        width,
+        height,
+        alt: photoAlt.trim() || `Foto de ${herb.name}`,
+      });
+      setHerb(saved);
+      setPhotoAlt("");
+    } catch (e) {
+      setPhotoError(e instanceof Error ? e.message : "Não foi possível enviar a foto.");
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
+
+  const dropPhoto = async (file: string) => {
+    if (slug === null || !window.confirm("Remover esta foto?")) return;
+    setPhotoError(null);
+    try {
+      setHerb(await removeHerbPhoto(slug, file.slice(2)));
+    } catch (e) {
+      setPhotoError(e instanceof Error ? e.message : "Não foi possível remover a foto.");
+    }
+  };
+
   const unlock = async () => {
+    if (slug === null) return;
     try {
       load(await unlockAdminHerb(slug));
       setMsg("Erva liberada: volta ao texto original no próximo início do servidor.");
@@ -139,7 +189,7 @@ function HerbEditor({
     }
   };
 
-  if (!herb) {
+  if (slug !== null && !herb) {
     return (
       <div>
         <button type="button" className="btn" onClick={onBack}>
@@ -158,18 +208,20 @@ function HerbEditor({
         <button type="button" className="btn" onClick={onBack}>
           <ArrowLeft size={16} aria-hidden /> Voltar
         </button>
-        <Link href={`/ervas/${slug}`} className="btn">
-          Ver página
-        </Link>
-        {herb.locked ? (
+        {slug !== null ? (
+          <Link href={`/ervas/${slug}`} className="btn">
+            Ver página
+          </Link>
+        ) : null}
+        {herb?.locked ? (
           <button type="button" className="btn" onClick={() => void unlock()} title="Volta ao texto do seed no próximo início do servidor">
             <RotateCcw size={16} aria-hidden /> Restaurar original
           </button>
         ) : null}
       </div>
 
-      <h2>{herb.name}</h2>
-      {herb.locked ? (
+      <h2>{herb?.name ?? "Nova erva"}</h2>
+      {herb?.locked ? (
         <p className="pv-small">
           <Lock size={13} aria-hidden style={{ verticalAlign: -2 }} /> Editada por você: as atualizações automáticas não
           sobrescrevem esta erva.
@@ -274,6 +326,55 @@ function HerbEditor({
         <p className="pv-small">Use **negrito** e linhas começando com &quot;- &quot; para listas.</p>
       </fieldset>
 
+      {herb ? (
+        <fieldset className="admin-field">
+          <legend>Fotos</legend>
+          <div className="admin-photos">
+            {herb.images.map((img) => (
+              <figure key={img.file}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={imageUrl(img.file)} alt={img.alt} width={120} height={120} loading="lazy" />
+                {isUploadedImage(img.file) ? (
+                  <button type="button" className="btn btn-danger" onClick={() => void dropPhoto(img.file)}>
+                    <Trash2 size={14} aria-hidden /> Remover
+                  </button>
+                ) : (
+                  <figcaption className="pv-small">Foto original</figcaption>
+                )}
+              </figure>
+            ))}
+          </div>
+          <input
+            value={photoAlt}
+            maxLength={160}
+            placeholder="Descrição da foto (opcional)"
+            aria-label="Descrição da foto"
+            onChange={(e) => setPhotoAlt(e.target.value)}
+          />
+          <label className={`btn${photoBusy ? " is-disabled" : ""}`}>
+            <ImagePlus size={16} aria-hidden /> {photoBusy ? "Enviando…" : "Enviar foto"}
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              hidden
+              disabled={photoBusy}
+              onChange={(e) => {
+                void addPhoto(e.target.files?.[0]);
+                e.target.value = "";
+              }}
+            />
+          </label>
+          {photoError ? (
+            <p role="alert" className="form-error">
+              {photoError}
+            </p>
+          ) : null}
+          <p className="pv-small">Até 8 fotos enviadas por erva. Fotos originais do guia não podem ser removidas.</p>
+        </fieldset>
+      ) : (
+        <p className="pv-small">Crie a erva primeiro: depois você poderá enviar fotos.</p>
+      )}
+
       {error ? (
         <p role="alert" className="form-error">
           {error}
@@ -282,8 +383,13 @@ function HerbEditor({
       {msg ? <p role="status" className="pv-small">{msg}</p> : null}
 
       <div className="admin-bar">
-        <button type="button" className="btn btn-primary" disabled={saving || !name.trim()} onClick={() => void save()}>
-          {saving ? "Salvando…" : "Salvar alterações"}
+        <button
+          type="button"
+          className="btn btn-primary"
+          disabled={saving || !name.trim() || (slug === null && (!mainUse.trim() || !summary.trim()))}
+          onClick={() => void save()}
+        >
+          {saving ? "Salvando…" : slug === null ? "Criar erva" : "Salvar alterações"}
         </button>
       </div>
     </div>
@@ -352,6 +458,7 @@ export default function AdminPage() {
   const taxonomy = useTaxonomy();
   const [tab, setTab] = useState<Tab>("ervas");
   const [slug, setSlug] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
   const [q, setQ] = useState("");
 
   const results = useMemo(() => {
@@ -374,27 +481,44 @@ export default function AdminPage() {
   return (
     <div className="container admin">
       <h1 className="page-title">Administração</h1>
-      <div className="chip-row" role="tablist" aria-label="Seções" hidden={!isAdmin}>
-        {(["ervas", "usuarios"] as const).map((t) => (
-          <button
-            key={t}
-            type="button"
-            role="tab"
-            aria-selected={tab === t}
-            className={`chip${tab === t ? " is-on" : ""}`}
-            onClick={() => setTab(t)}
-          >
-            {t === "ervas" ? "Ervas" : "Usuários"}
-          </button>
-        ))}
-      </div>
+      {isAdmin ? (
+        <div className="chip-row" role="tablist" aria-label="Seções">
+          {(["ervas", "usuarios"] as const).map((t) => (
+            <button
+              key={t}
+              type="button"
+              role="tab"
+              aria-selected={tab === t}
+              className={`chip${tab === t ? " is-on" : ""}`}
+              onClick={() => setTab(t)}
+            >
+              {t === "ervas" ? "Ervas" : "Usuários"}
+            </button>
+          ))}
+        </div>
+      ) : null}
 
       {isAdmin && tab === "usuarios" ? (
         <Users />
-      ) : slug ? (
-        <HerbEditor key={slug} slug={slug} taxonomy={taxonomy.data} onBack={() => setSlug(null)} />
+      ) : creating || slug ? (
+        <HerbEditor
+          key={creating ? "nova" : slug}
+          slug={creating ? null : slug}
+          taxonomy={taxonomy.data}
+          onBack={() => {
+            setCreating(false);
+            setSlug(null);
+          }}
+          onCreated={(created) => {
+            setCreating(false);
+            setSlug(created);
+          }}
+        />
       ) : (
         <div>
+          <button type="button" className="btn btn-primary" style={{ marginTop: 16 }} onClick={() => setCreating(true)}>
+            <Plus size={16} aria-hidden /> Nova erva
+          </button>
           <div className="search-box" style={{ margin: "16px 0" }}>
             <Search size={18} aria-hidden />
             <input

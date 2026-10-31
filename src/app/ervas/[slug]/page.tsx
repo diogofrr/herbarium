@@ -79,7 +79,7 @@ export default async function HerbPage({ params }: Props) {
               unoptimized
             />
             <figcaption>
-              {hero.credit}, {hero.sourceUrl ? "licença " : ""}
+              {hero.credit}{hero.license ? ", " : ""}{hero.sourceUrl ? "licença " : ""}
               {hero.sourceUrl ? (
                 <a href={hero.sourceUrl} target="_blank" rel="noopener noreferrer">
                   {hero.license}
@@ -172,7 +172,7 @@ export default async function HerbPage({ params }: Props) {
                       unoptimized
                     />
                     <figcaption>
-                      {img.credit}, {img.sourceUrl ? "licença " : ""}
+                      {img.credit}{img.license ? ", " : ""}{img.sourceUrl ? "licença " : ""}
                       {img.sourceUrl ? (
                         <a href={img.sourceUrl} target="_blank" rel="noopener noreferrer">
                           {img.license}

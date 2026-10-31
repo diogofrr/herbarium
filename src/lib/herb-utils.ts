@@ -41,12 +41,21 @@ export function isTemperature(value: string | null | undefined): value is Temper
 }
 
 /** Arquivos de imagem ficam em /public/herbs (WebP otimizado). */
+/** Fotos enviadas pela curadoria vêm como "u-<id>" e saem da API (não são arquivos do front). */
+const UPLOADED = /^u-([0-9a-f-]{36})$/;
+
+export function isUploadedImage(file: string): boolean {
+  return UPLOADED.test(file);
+}
+
 export function imageUrl(file: string): string {
-  return `/herbs/${file}`;
+  const uploaded = UPLOADED.exec(file);
+  return uploaded ? `/api/herb-photos/${uploaded[1]}` : `/herbs/${file}`;
 }
 
 export function thumbUrl(file: string): string {
-  return `/herbs/${file.replace(/\.webp$/, "-thumb.webp")}`;
+  const uploaded = UPLOADED.exec(file);
+  return uploaded ? `/api/herb-photos/${uploaded[1]}` : `/herbs/${file.replace(/\.webp$/, "-thumb.webp")}`;
 }
 
 export function herbMatches(herb: HerbCard, filters: HerbFilters): boolean {

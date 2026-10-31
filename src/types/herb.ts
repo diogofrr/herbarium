@@ -129,6 +129,21 @@ export type UpdateHerbInput = Partial<{
   sections: HerbSection[];
 }>;
 
+export type CreateHerbInput = UpdateHerbInput & {
+  name: string;
+  temperature: Temperature;
+  mainUse: string;
+  summary: string;
+};
+
+export type HerbPhotoInput = {
+  mime: "image/jpeg";
+  data: string;
+  alt: string;
+  width: number;
+  height: number;
+};
+
 export type CreateMarkerInput = {
   herbSlug: string;
   status: MarkerStatus;

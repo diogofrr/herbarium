@@ -57,10 +57,12 @@ async function forward(request: NextRequest, { params }: Ctx) {
         { status: res.status },
       );
     }
-    // Edição de erva pelo administrador: a página pública atualiza na hora.
-    if (path[0] === "admin" && path[1] === "herbs" && path[2] && hasBody) {
+    // Curadoria mexeu numa erva (editar, criar, foto): as páginas públicas atualizam na hora.
+    if (path[0] === "admin" && path[1] === "herbs" && request.method !== "GET") {
       revalidatePath("/ervas");
-      revalidatePath(`/ervas/${path[2]}`);
+      revalidatePath("/");
+      const slug = path[2] ?? (data as { slug?: string } | null)?.slug;
+      if (slug) revalidatePath(`/ervas/${slug}`);
     }
     return NextResponse.json({ data });
   } catch {

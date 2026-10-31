@@ -6,6 +6,8 @@ import type {
   HerbMarker,
   MarkerDetail,
   UpdateHerbInput,
+  CreateHerbInput,
+  HerbPhotoInput,
 } from "@/types/herb";
 
 type Envelope<T> = { data?: T; error?: string };
@@ -49,5 +51,10 @@ export const updateAdminUser = (id: string, body: { isActive?: boolean; role?: "
 export const fetchAdminHerb = (slug: string) => call<AdminHerb>(`admin/herbs/${slug}`, "GET");
 export const saveAdminHerb = (slug: string, body: UpdateHerbInput) =>
   call<AdminHerb>(`admin/herbs/${slug}`, "PATCH", body);
+export const createAdminHerb = (body: CreateHerbInput) => call<AdminHerb>("admin/herbs", "POST", body);
+export const uploadHerbPhoto = (slug: string, body: HerbPhotoInput) =>
+  call<AdminHerb>(`admin/herbs/${slug}/photos`, "POST", body);
+export const removeHerbPhoto = (slug: string, photoId: string) =>
+  call<AdminHerb>(`admin/herbs/${slug}/photos/${photoId}`, "DELETE");
 export const unlockAdminHerb = (slug: string) =>
   call<AdminHerb>(`admin/herbs/${slug}/unlock`, "POST");
