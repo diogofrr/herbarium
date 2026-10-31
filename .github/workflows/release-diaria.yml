@@ -1,0 +1,62 @@
+name: Release diária
+
+# O site (Vercel) só publica em produção a branch main. O trabalho do dia fica na develop
+# (a Vercel cria só uma prévia) e vira release à meia-noite de Brasília (UTC-3, sem horário
+# de verão): 03:00 UTC. O GitHub pode atrasar execuções agendadas em alguns minutos.
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 0
+
+      - name: Há o que publicar?
+        id: changes
+        run: |
+          git fetch origin main
+          if ! git merge-base --is-ancestor origin/main origin/develop; then
+            echo "::error::A main tem commits que não estão na develop. Traga a main para a develop (git merge origin/main) antes da release."
+            exit 1
+          fi
+          count=$(git rev-list --count origin/main..origin/develop)
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Release de hoje: $count commit(s)"
+            git log --format='- %s' origin/main..origin/develop
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/setup-node@v4
+        if: steps.changes.outputs.count != '0'
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Instala dependências
+        if: steps.changes.outputs.count != '0'
+        run: npm ci
+
+      - name: Tipos
+        if: steps.changes.outputs.count != '0'
+        run: npx tsc --noEmit
+
+      - name: Lint
+        if: steps.changes.outputs.count != '0'
+        run: npm run lint
+
+      - name: Publica na main (somente avanço direto)
+        if: steps.changes.outputs.count != '0'
+        run: git push origin HEAD:main
