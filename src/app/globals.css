@@ -2843,3 +2843,36 @@ button.chip.is-on.chip-temp-fria:hover {
   opacity: 0.6;
   pointer-events: none;
 }
+
+.crop-frame {
+  position: relative;
+  max-width: 100%;
+  margin: 0 auto 12px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--surface-2);
+  touch-action: none;
+  cursor: grab;
+}
+
+.crop-frame img {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  max-width: none;
+  user-select: none;
+  pointer-events: none;
+}
+
+.crop-zoom {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 280px;
+  max-width: 100%;
+  margin: 0 auto 12px;
+}
+
+.crop-zoom input {
+  flex: 1;
+}

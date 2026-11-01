@@ -16,7 +16,8 @@ import {
   uploadHerbPhoto,
 } from "@/lib/api/account";
 import { fold, imageUrl, isUploadedImage } from "@/lib/herb-utils";
-import { compressPhoto } from "@/lib/image";
+import { PhotoCropper } from "@/components/photo-cropper";
+import { compressPhoto, type PhotoCrop } from "@/lib/image";
 import type { AdminHerb, AdminUser, HerbSection, Taxonomy, Temperature } from "@/types/herb";
 
 type Tab = "ervas" | "usuarios";
@@ -71,6 +72,7 @@ function HerbEditor({
   const [herb, setHerb] = useState<AdminHerb | null>(null);
   const [photoAlt, setPhotoAlt] = useState("");
   const [photoBusy, setPhotoBusy] = useState(false);
+  const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -147,12 +149,13 @@ function HerbEditor({
     }
   };
 
-  const addPhoto = async (file: File | undefined) => {
-    if (!file || slug === null || !herb) return;
+  const addPhoto = async (file: File, crop: PhotoCrop) => {
+    if (slug === null || !herb) return;
+    setPendingPhoto(null);
     setPhotoBusy(true);
     setPhotoError(null);
     try {
-      const { mime, data, width, height } = await compressPhoto(file);
+      const { mime, data, width, height } = await compressPhoto(file, crop);
       const saved = await uploadHerbPhoto(slug, {
         mime,
         data,
@@ -359,11 +362,16 @@ function HerbEditor({
               hidden
               disabled={photoBusy}
               onChange={(e) => {
-                void addPhoto(e.target.files?.[0]);
+                setPendingPhoto(e.target.files?.[0] ?? null);
                 e.target.value = "";
               }}
             />
           </label>
+          <PhotoCropper
+            file={pendingPhoto}
+            onCancel={() => setPendingPhoto(null)}
+            onConfirm={(file, crop) => void addPhoto(file, crop)}
+          />
           {photoError ? (
             <p role="alert" className="form-error">
               {photoError}
