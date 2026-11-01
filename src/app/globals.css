@@ -2876,3 +2876,149 @@ button.chip.is-on.chip-temp-fria:hover {
 .crop-zoom input {
   flex: 1;
 }
+
+/* ─── Administração: editor de erva em cartões ───────────────────────────── */
+.admin .page-title {
+  margin-bottom: 14px;
+}
+
+.admin-form {
+  gap: 16px;
+}
+
+.admin-title {
+  margin: 4px 0 -6px;
+  font-size: clamp(1.5rem, 4vw, 2rem);
+}
+
+.admin-card {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  margin: 0;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.admin-card > h3,
+.admin-card > legend {
+  float: left;
+  width: 100%;
+  margin: 0;
+  padding: 0 0 10px;
+  border-bottom: 1px solid var(--line);
+  font-family: var(--font-display, inherit);
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.admin-card > h3 + *,
+.admin-card > legend + * {
+  clear: both;
+}
+
+.admin-card .admin-field > legend {
+  padding: 0;
+}
+
+.admin-card .admin-field > span,
+.admin-card .admin-field > legend {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.admin-section {
+  gap: 10px;
+  padding: 12px;
+  background: var(--bg);
+}
+
+.admin-section-head {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-section-head input {
+  flex: 1;
+  font-weight: 700;
+}
+
+.admin-remove {
+  width: 44px;
+  padding: 0;
+  color: var(--danger);
+}
+
+.admin-remove:hover {
+  background: color-mix(in srgb, var(--danger) 10%, var(--surface));
+}
+
+.admin-photos {
+  gap: 14px;
+}
+
+.admin-photos figure {
+  width: 120px;
+}
+
+.admin-photos img {
+  flex: none;
+  border: 1px solid var(--line);
+}
+
+.admin-photos .btn {
+  width: 100%;
+  min-height: 34px;
+  padding: 0 10px;
+  font-size: 0.85rem;
+}
+
+.admin-upload {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-upload input[type="text"],
+.admin-upload input:not([type]) {
+  flex: 1 1 220px;
+}
+
+.admin-save {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 0 -16px;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter: blur(6px);
+}
+
+.admin-save p {
+  flex: 1 1 100%;
+  margin: 0;
+}
+
+@media (min-width: 900px) {
+  .admin-save {
+    margin: 0;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+  }
+}

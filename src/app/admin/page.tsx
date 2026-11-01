@@ -223,7 +223,7 @@ function HerbEditor({
         ) : null}
       </div>
 
-      <h2>{herb?.name ?? "Nova erva"}</h2>
+      <h2 className="admin-title">{herb?.name ?? "Nova erva"}</h2>
       {herb?.locked ? (
         <p className="pv-small">
           <Lock size={13} aria-hidden style={{ verticalAlign: -2 }} /> Editada por você: as atualizações automáticas não
@@ -231,14 +231,18 @@ function HerbEditor({
         </p>
       ) : null}
 
-      <label className="admin-field">
-        <span>Nome</span>
-        <input value={name} maxLength={80} onChange={(e) => setName(e.target.value)} />
-      </label>
-      <label className="admin-field">
-        <span>Outros nomes (separe por vírgula)</span>
-        <input value={alt} onChange={(e) => setAlt(e.target.value)} />
-      </label>
+      <section className="admin-card" aria-labelledby="admin-basic">
+      <h3 id="admin-basic">Informações básicas</h3>
+      <div className="admin-grid">
+        <label className="admin-field">
+          <span>Nome</span>
+          <input value={name} maxLength={80} onChange={(e) => setName(e.target.value)} />
+        </label>
+        <label className="admin-field">
+          <span>Outros nomes (separe por vírgula)</span>
+          <input value={alt} onChange={(e) => setAlt(e.target.value)} />
+        </label>
+      </div>
 
       <fieldset className="admin-field">
         <legend>Temperatura</legend>
@@ -265,7 +269,10 @@ function HerbEditor({
         <span>Resumo</span>
         <textarea value={summary} rows={3} maxLength={600} onChange={(e) => setSummary(e.target.value)} />
       </label>
+      </section>
 
+      <section className="admin-card" aria-labelledby="admin-class">
+      <h3 id="admin-class">Classificação</h3>
       <ChipPicker
         label="Funções"
         options={(taxonomy?.functions ?? []).map((f) => ({ slug: f.slug, name: f.label }))}
@@ -274,8 +281,9 @@ function HerbEditor({
       />
       <ChipPicker label="Orixás" options={taxonomy?.orixas ?? []} value={orixas} onChange={setOrixas} />
       <ChipPicker label="Povos" options={taxonomy?.povos ?? []} value={povos} onChange={setPovos} />
+      </section>
 
-      <fieldset className="admin-field">
+      <fieldset className="admin-field admin-card">
         <legend>Cuidado</legend>
         <label className="admin-check">
           <input type="checkbox" checked={hasRisk} onChange={(e) => setHasRisk(e.target.checked)} />
@@ -291,16 +299,27 @@ function HerbEditor({
         />
       </fieldset>
 
-      <fieldset className="admin-field">
+      <fieldset className="admin-field admin-card">
         <legend>Seções do texto</legend>
         {sections.map((s, i) => (
           <div key={i} className="admin-section">
-            <input
-              value={s.title}
-              maxLength={120}
-              aria-label="Título da seção"
-              onChange={(e) => setSections((all) => all.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)))}
-            />
+            <div className="admin-section-head">
+              <input
+                value={s.title}
+                maxLength={120}
+                aria-label="Título da seção"
+                onChange={(e) => setSections((all) => all.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)))}
+              />
+              <button
+                type="button"
+                className="btn btn-icon admin-remove"
+                aria-label={`Remover seção ${s.title}`}
+                title="Remover seção"
+                onClick={() => setSections((all) => all.filter((_, j) => j !== i))}
+              >
+                <Trash2 size={16} aria-hidden />
+              </button>
+            </div>
             <textarea
               value={s.body}
               rows={5}
@@ -308,13 +327,6 @@ function HerbEditor({
               aria-label={`Texto da seção ${s.title}`}
               onChange={(e) => setSections((all) => all.map((x, j) => (j === i ? { ...x, body: e.target.value } : x)))}
             />
-            <button
-              type="button"
-              className="btn btn-danger"
-              onClick={() => setSections((all) => all.filter((_, j) => j !== i))}
-            >
-              <Trash2 size={14} aria-hidden /> Remover seção
-            </button>
           </div>
         ))}
         <button
@@ -330,7 +342,7 @@ function HerbEditor({
       </fieldset>
 
       {herb ? (
-        <fieldset className="admin-field">
+        <fieldset className="admin-field admin-card">
           <legend>Fotos</legend>
           <div className="admin-photos">
             {herb.images.map((img) => (
@@ -347,26 +359,28 @@ function HerbEditor({
               </figure>
             ))}
           </div>
-          <input
-            value={photoAlt}
-            maxLength={160}
-            placeholder="Descrição da foto (opcional)"
-            aria-label="Descrição da foto"
-            onChange={(e) => setPhotoAlt(e.target.value)}
-          />
-          <label className={`btn${photoBusy ? " is-disabled" : ""}`}>
-            <ImagePlus size={16} aria-hidden /> {photoBusy ? "Enviando…" : "Enviar foto"}
+          <div className="admin-upload">
             <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              hidden
-              disabled={photoBusy}
-              onChange={(e) => {
-                setPendingPhoto(e.target.files?.[0] ?? null);
-                e.target.value = "";
-              }}
+              value={photoAlt}
+              maxLength={160}
+              placeholder="Descrição da foto (opcional)"
+              aria-label="Descrição da foto"
+              onChange={(e) => setPhotoAlt(e.target.value)}
             />
-          </label>
+            <label className={`btn btn-primary${photoBusy ? " is-disabled" : ""}`}>
+              <ImagePlus size={16} aria-hidden /> {photoBusy ? "Enviando…" : "Enviar foto"}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                hidden
+                disabled={photoBusy}
+                onChange={(e) => {
+                  setPendingPhoto(e.target.files?.[0] ?? null);
+                  e.target.value = "";
+                }}
+              />
+            </label>
+          </div>
           <PhotoCropper
             file={pendingPhoto}
             onCancel={() => setPendingPhoto(null)}
@@ -383,14 +397,13 @@ function HerbEditor({
         <p className="pv-small">Crie a erva primeiro: depois você poderá enviar fotos.</p>
       )}
 
-      {error ? (
-        <p role="alert" className="form-error">
-          {error}
-        </p>
-      ) : null}
-      {msg ? <p role="status" className="pv-small">{msg}</p> : null}
-
-      <div className="admin-bar">
+      <div className="admin-save">
+        {error ? (
+          <p role="alert" className="form-error">
+            {error}
+          </p>
+        ) : null}
+        {msg ? <p role="status" className="pv-small">{msg}</p> : null}
         <button
           type="button"
           className="btn btn-primary"
